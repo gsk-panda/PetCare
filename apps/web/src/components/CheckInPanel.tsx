@@ -7,6 +7,7 @@ import {
   type PetProfile,
   type StayMedication,
 } from '../api';
+import { Icon } from './Icon';
 
 const DAY_MS = 86_400_000;
 
@@ -167,7 +168,9 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
         <div className="modal-hd">
           <b>Check in · {occupant.petName}</b>
           <span className="pill prim" style={{ marginLeft: 8 }}>{runCode}</span>
-          <button type="button" className="modal-x" onClick={onClose} aria-label="Close">✕</button>
+          <button type="button" className="modal-x" onClick={onClose} aria-label="Close">
+            <Icon name="close" size={15} />
+          </button>
         </div>
 
         {loadError ? (

@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import type { TenantMeta } from '../api';
+import { Icon, type IconName } from './Icon';
 
-const links = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/board', label: 'Facility board' },
-  { to: '/care', label: 'Care rounds' },
-  { to: '/calendar', label: 'Calendar' },
-  { to: '/clients', label: 'Clients & pets' },
+const links: Array<{ to: string; label: string; icon: IconName }> = [
+  { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
+  { to: '/board', label: 'Facility board', icon: 'board' },
+  { to: '/care', label: 'Care rounds', icon: 'care' },
+  { to: '/calendar', label: 'Calendar', icon: 'calendar' },
+  { to: '/clients', label: 'Clients & pets', icon: 'clients' },
 ];
 
 export function Shell({ tenant, children }: { tenant: TenantMeta; children: ReactNode }) {
@@ -21,6 +22,7 @@ export function Shell({ tenant, children }: { tenant: TenantMeta; children: Reac
         <nav>
           {links.map((l) => (
             <NavLink key={l.to} to={l.to} className={({ isActive }) => (isActive ? 'on' : '')}>
+              <Icon name={l.icon} />
               {l.label}
             </NavLink>
           ))}

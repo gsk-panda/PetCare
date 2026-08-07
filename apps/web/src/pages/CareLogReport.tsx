@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { CareTask } from '@petcare/shared';
 import { fetchCareLog, type CareLogReport as Report } from '../api';
+import { Icon } from '../components/Icon';
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -79,9 +80,11 @@ export function CareLogReport() {
         <div className="right">
           <Link to="/care" className="btn ghost">Back to rounds</Link>
           <button className="btn ghost" onClick={download} disabled={!report}>
+            <Icon name="download" size={15} />
             Export CSV
           </button>
           <button className="btn" onClick={() => window.print()} disabled={!report}>
+            <Icon name="print" size={15} />
             Print
           </button>
         </div>

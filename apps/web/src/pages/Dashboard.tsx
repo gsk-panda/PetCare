@@ -4,6 +4,8 @@ import type { DashboardStats } from '@petcare/shared';
 import { fetchBookings, fetchDashboard, type BookingRow } from '../api';
 import { NewBookingModal } from '../components/NewBookingModal';
 import { VaccineAlerts } from '../components/VaccineAlerts';
+import { LoadingRegion } from '../components/Skeleton';
+import { Icon } from '../components/Icon';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -32,7 +34,18 @@ export function Dashboard() {
   useEffect(load, [load]);
 
   if (error) return <div className="hint error">Failed to load dashboard: {error}</div>;
-  if (!stats) return <div className="hint">Loading dashboard…</div>;
+  if (!stats) {
+    return (
+      <>
+        <div className="topbar">
+          <h1>Good morning, Rosa</h1>
+        </div>
+        <div className="content">
+          <LoadingRegion label="Loading dashboard" />
+        </div>
+      </>
+    );
+  }
 
   const pct = stats.occupancy.capacity
     ? Math.round((stats.occupancy.occupied / stats.occupancy.capacity) * 100)
@@ -49,7 +62,8 @@ export function Dashboard() {
         <span className="date">{todayStr}</span>
         <div className="right">
           <button className="btn" onClick={() => setBooking(true)}>
-            + New booking
+            <Icon name="plus" size={15} />
+            New booking
           </button>
         </div>
       </div>
@@ -97,7 +111,13 @@ export function Dashboard() {
               </Link>
             </div>
             {arrivals.length === 0 ? (
-              <div className="hint">No arrivals scheduled today.</div>
+              <div className="empty">
+                <b>No arrivals today</b>
+                <small>
+                  Bookings starting today appear here with their run assignment, ready to
+                  check in from the facility board.
+                </small>
+              </div>
             ) : (
               <table className="tbl">
                 <thead>

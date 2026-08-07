@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchVaccineAlerts, type VaccineAlertsResponse } from '../api';
+import { Icon } from './Icon';
 
 function expiryLabel(daysLeft: number): string {
   if (daysLeft < 0) return `expired ${Math.abs(daysLeft)}d ago`;
@@ -48,7 +49,7 @@ export function VaccineAlerts({ withinDays = 30 }: { withinDays?: number }) {
             </small>
           </div>
           <button className="alert-x" onClick={() => setDismissed(true)} aria-label="Dismiss">
-            ✕
+            <Icon name="close" size={14} />
           </button>
         </div>
       )}

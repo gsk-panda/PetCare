@@ -6,6 +6,7 @@ import {
   type PetOption,
   type RunOption,
 } from '../api';
+import { Icon } from './Icon';
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -119,7 +120,7 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
         <div className="modal-hd">
           <b>New booking</b>
           <button type="button" className="modal-x" onClick={onClose} aria-label="Close">
-            ✕
+            <Icon name="close" size={15} />
           </button>
         </div>
 

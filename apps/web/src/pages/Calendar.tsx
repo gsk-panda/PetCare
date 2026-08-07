@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchCalendar, type BookingRow, type CalendarResponse } from '../api';
 import { NewBookingModal } from '../components/NewBookingModal';
+import { Icon } from '../components/Icon';
 
 const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -65,17 +66,28 @@ export function Calendar() {
         <h1>Calendar</h1>
         <span className="date">Week of {rangeLabel}</span>
         <div className="right">
-          <button className="btn ghost" onClick={() => setAnchor((a) => addDays(a, -7))}>
-            ‹ Prev
+          <button
+            className="btn ghost"
+            onClick={() => setAnchor((a) => addDays(a, -7))}
+            aria-label="Previous week"
+          >
+            <Icon name="chevronLeft" size={15} />
+            Prev
           </button>
           <button className="btn ghost" onClick={() => setAnchor(weekStart(new Date()))}>
             This week
           </button>
-          <button className="btn ghost" onClick={() => setAnchor((a) => addDays(a, 7))}>
-            Next ›
+          <button
+            className="btn ghost"
+            onClick={() => setAnchor((a) => addDays(a, 7))}
+            aria-label="Next week"
+          >
+            Next
+            <Icon name="chevronRight" size={15} />
           </button>
           <button className="btn" onClick={() => setBookingDate(today)}>
-            + New booking
+            <Icon name="plus" size={15} />
+            New booking
           </button>
         </div>
       </div>

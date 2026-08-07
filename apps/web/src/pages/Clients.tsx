@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchClients, type ClientRow } from '../api';
+import { Icon } from '../components/Icon';
 
 export function Clients() {
   const [clients, setClients] = useState<ClientRow[]>([]);
@@ -20,7 +21,10 @@ export function Clients() {
         <h1>Clients &amp; pets</h1>
         <span className="date">{clients.length} households</span>
         <div className="right">
-          <button className="btn">+ New client</button>
+          <button className="btn">
+            <Icon name="plus" size={15} />
+            New client
+          </button>
         </div>
       </div>
       <div className="content">

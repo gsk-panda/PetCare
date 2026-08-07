@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { checkOut, fetchBoard, type BoardCell, type BoardOccupant } from '../api';
 import { CheckInPanel } from '../components/CheckInPanel';
+import { Icon } from '../components/Icon';
 
 /** The one action this occupant can take right now, if any. */
 function actionFor(o: BoardOccupant): 'Check in' | 'Check out' | null {
@@ -90,7 +91,10 @@ export function Board() {
           {new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
         </span>
         <div className="right">
-          <button className="btn ghost" onClick={load}>Refresh</button>
+          <button className="btn ghost" onClick={load}>
+            <Icon name="refresh" size={15} />
+            Refresh
+          </button>
         </div>
       </div>
       {checkingIn && (
@@ -103,10 +107,10 @@ export function Board() {
       )}
       <div className="content">
         <div className="board-legend">
-          <span><i style={{ background: 'var(--p-primary)' }} />Occupied</span>
-          <span><i style={{ background: 'var(--p-info)' }} />Arriving</span>
-          <span><i style={{ background: 'var(--p-warm)' }} />Departing</span>
-          <span><i style={{ border: '1.5px dashed #b8c4bc', background: 'transparent' }} />Open</span>
+          <span><i style={{ background: 'var(--surface)', boxShadow: 'inset 0 0 0 1px var(--line-strong)' }} />Occupied</span>
+          <span><i style={{ background: 'var(--info-bg)', boxShadow: 'inset 0 0 0 1px var(--info)' }} />Arriving</span>
+          <span><i style={{ background: 'var(--warn-bg)', boxShadow: 'inset 0 0 0 1px var(--warn)' }} />Departing</span>
+          <span><i style={{ border: '1.5px dashed var(--line-strong)', background: 'transparent' }} />Open</span>
         </div>
         {zones.map(([zone, zoneCells]) => (
           <section key={zone} className="zone">
@@ -139,7 +143,7 @@ export function Board() {
                                   <i style={{ background: g.avatarColor }} />
                                   {g.petName}
                                 </Link>
-                                {g.hasMeds && <em className="gmed">MED</em>}
+                                {g.hasMeds && <em className="gmed">Med</em>}
                                 {gAction && (
                                   <button
                                     className="gact"
@@ -161,7 +165,17 @@ export function Board() {
 
                 return (
                   <div key={cell.run.id} className={`run ${state}`}>
-                    <span className="id">{cell.run.code}</span>
+                    <span className="id">
+                      {cell.run.code}
+                      <span className="chips">
+                        {cell.occupants[0]?.hasMeds && <span className="state-chip med">Med</span>}
+                        {!cell.occupants[0]?.hasMeds && cell.occupants[0]?.isNewClient && (
+                          <span className="state-chip new">New</span>
+                        )}
+                        {state === 'arr' && <span className="state-chip arr">In</span>}
+                        {state === 'dep' && <span className="state-chip dep">Out</span>}
+                      </span>
+                    </span>
                     {cell.occupants.length === 0 ? (
                       <b>Open {cell.run.kind}</b>
                     ) : (
@@ -173,8 +187,6 @@ export function Board() {
                               <b>{o.petName}</b>
                               <small>{occupantLine(o)}</small>
                             </Link>
-                            {o.hasMeds && <span className="flag med">MED</span>}
-                            {!o.hasMeds && o.isNewClient && <span className="flag new">NEW</span>}
                             {action && (
                               <button
                                 className="runact"
