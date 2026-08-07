@@ -8,6 +8,28 @@ The client PWA (Phase 1, not yet built) will be a different brief — a client
 checking on their dog is closer to Read/Persuade, and should not inherit this
 density wholesale.
 
+## Visual world
+
+The direction references **thepuppyplayground.com**: a warm cream ground, a
+loud primary red, warm near-black ink rather than a cool grey, and the pairing
+of **Work Sans** for UI with **Changa One** as the display voice. Both faces are
+self-hosted via `@fontsource`, so the app has no CDN dependency and works
+offline as a PWA.
+
+That site is a marketing surface and this is a staff tool, so the world is
+adopted but its application is not. Specifically:
+
+- **Changa One is restricted to identity and page titles.** A heavy condensed
+  display face on data labels, buttons and table headers would punish people
+  reading this for a full shift. Work Sans carries everything else.
+- **Full-saturation red is reserved** for primary actions, active navigation and
+  the brand mark. It never fills inactive states or large surfaces.
+- **Cream is the ground, white is the content surface.** Cards lift off the
+  warm background without needing a shadow.
+
+Only the palette and typefaces are referenced. No logo, wordmark, imagery or
+copy is taken from that site; the identity here is Cedar Creek's own.
+
 ## Tokens
 
 All values live in `apps/web/src/theme.css` under `:root`. Nothing else declares
@@ -18,18 +40,24 @@ is overridden at runtime per tenant from `platform.tenants.theme`, so the
 white-label swap is a config change. Everything below derives from tokens and
 survives the swap.
 
-**Neutrals** carry two layers: `--surface` for content, `--surface-2`/`--ground`
-for chrome (sidebar, toolbars, table hover, modal footers). They are green-biased
-rather than pure grey, so they sit under the spruce brand rather than fighting it.
+**Neutrals** carry two layers: `--surface` for content, `--ground`/`--surface-2`
+for the warm cream backdrop, and `--chrome` for the sidebar. They are warm-biased
+so the cream reads as a chosen surface rather than an unstyled one.
 
 **Semantic state** (`--good`, `--warn`, `--bad`, `--info`) is separate from brand
-and is the only thing allowed to encode meaning by colour. The accent is for
-primary actions, current selection and state indicators — never decoration.
+and is the only thing allowed to encode meaning by colour.
 
-**Type** is a fixed rem scale at roughly a 1.15 ratio, `--t-2xs` (11px) through
+Because the brand *is* red, danger is deliberately a darker, less saturated red
+(`#8E1418`) than the brand (`#E51B24`), so a destructive state never reads as a
+primary action. Semantic colour always ships alongside a label or icon — hue is
+never the only signal, which also keeps the interface usable for red-green
+colour blindness.
+
+**Type** is a fixed rem scale at roughly a 1.15 ratio, `--t-3xs` (9.5px) through
 `--t-2xl` (28px). Product UI is viewed at consistent DPI; fluid `clamp()`
-headings that shrink in a sidebar look worse, not better. One family throughout —
-a well-tuned sans carries headings, labels, data and body. No display face.
+headings that shrink in a sidebar look worse, not better. Work Sans carries
+headings, labels, data and body; Changa One appears only as `--font-display` on
+the wordmark and page titles.
 
 **Motion** is 120–180ms, and conveys state only: hover, selection, meter fill,
 overlay entrance. No page-load choreography — staff load into a task and should
@@ -64,6 +92,7 @@ not wait to watch it arrive. Everything collapses under
 | Signal | Token | Used for |
 | --- | --- | --- |
 | Brand | `--brand` | Primary actions, current nav, selection, occupancy fill |
+| Accent | `--accent` | Staff avatar, sparing highlight — never a state |
 | Good | `--good` | Checked in, dose given, vaccines current |
 | Warn | `--warn` | Departing today, expiring vaccine, meal not given, near capacity |
 | Bad | `--bad` | Missed dose, expired vaccine, mid-stay expiry, destructive |

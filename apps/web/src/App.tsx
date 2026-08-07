@@ -21,10 +21,12 @@ export default function App() {
         document.title = meta.theme.appName;
         // White-label: tenant theme config overrides the brand tokens at runtime.
         const root = document.documentElement.style;
-        root.setProperty('--p-primary', meta.theme.primary);
-        root.setProperty('--p-primary-deep', meta.theme.primaryDeep);
-        root.setProperty('--p-warm', meta.theme.accent);
-        root.setProperty('--p-warm-text', meta.theme.accentText);
+        root.setProperty('--brand', meta.theme.primary);
+        root.setProperty('--brand-deep', meta.theme.primaryDeep);
+        root.setProperty('--brand-tint', meta.theme.primaryTint);
+        root.setProperty('--accent', meta.theme.accent);
+        root.setProperty('--accent-ink', meta.theme.accentText);
+        root.setProperty('--chrome', meta.theme.chrome);
       })
       .catch((e: Error) => setError(e.message));
   }, []);

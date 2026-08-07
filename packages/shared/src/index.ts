@@ -56,8 +56,12 @@ export interface TenantTheme {
   logoInitials: string;
   primary: string;
   primaryDeep: string;
+  /** Light wash of the brand, used for selection and active surfaces. */
+  primaryTint: string;
   accent: string;
   accentText: string;
+  /** Sidebar / chrome layer, sits behind the brand rather than competing. */
+  chrome: string;
 }
 
 export interface Tenant {
