@@ -122,33 +122,6 @@ export function Calendar() {
                       <b>{date.getDate()}</b>
                     </button>
 
-                    {boarding.slice(0, 3).map((b) => (
-                      <div key={b.id} className="evt b">
-                        {b.petName}
-                        <small>
-                          {b.runCode ? `${b.runCode} · ` : ''}
-                          {nights(b)} nt{nights(b) === 1 ? '' : 's'}
-                        </small>
-                      </div>
-                    ))}
-                    {boarding.length > 3 && (
-                      <div className="evt b more">+{boarding.length - 3} more boarding</div>
-                    )}
-
-                    {daycare.length > 0 && (
-                      <div className="evt d">
-                        Daycare · {daycare.length}
-                        <small>{daycare.map((b) => b.petName).join(', ')}</small>
-                      </div>
-                    )}
-
-                    {pending.map((b) => (
-                      <div key={b.id} className="evt hold">
-                        Request · {b.petName}
-                        <small>{b.clientName} · review</small>
-                      </div>
-                    ))}
-
                     <div className="capline">
                       {booked} / {data.capacity.boarding} booked
                       <div className="meter">
@@ -158,6 +131,40 @@ export function Calendar() {
                         />
                       </div>
                     </div>
+
+                    {boarding.length > 0 && (
+                      <div className="evt-group">
+                        <span className="evt-label">Boarding · {boarding.length}</span>
+                        {boarding.map((b) => (
+                          <div key={b.id} className="evt b">
+                            {b.petName}
+                            <small>
+                              {b.runCode ? `${b.runCode} · ` : ''}
+                              {nights(b)} nt{nights(b) === 1 ? '' : 's'}
+                            </small>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {daycare.length > 0 && (
+                      <div className="evt-group">
+                        <span className="evt-label">Daycare · {daycare.length}</span>
+                        {daycare.map((b) => (
+                          <div key={b.id} className="evt d">
+                            {b.petName}
+                            <small>{b.runCode ?? 'group TBD'}</small>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {pending.map((b) => (
+                      <div key={b.id} className="evt hold">
+                        Request · {b.petName}
+                        <small>{b.clientName} · review</small>
+                      </div>
+                    ))}
                   </div>
                 );
               })}

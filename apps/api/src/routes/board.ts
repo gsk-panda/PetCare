@@ -97,13 +97,41 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Check-in / check-out state transitions from the board.
-  app.post<{ Params: { bookingId: string }; Body: { staffName?: string } }>(
-    '/bookings/:bookingId/check-in',
-    async (req, reply) => {
-      return transition(req.tenant.schemaName, req.params.bookingId, 'checked_in', 'checkin',
-        req.body?.staffName, reply);
-    },
-  );
+  app.post<{
+    Params: { bookingId: string };
+    Body: {
+      staffName?: string;
+      belongings?: string;
+      feedingConfirmed?: boolean;
+      medsConfirmed?: boolean;
+      vaccinesVerified?: boolean;
+      signatureCaptured?: boolean;
+    };
+  }>('/bookings/:bookingId/check-in', async (req, reply) => {
+    const b = req.body ?? {};
+    // Summarise the front-desk checklist onto the check-in event so the audit
+    // trail records what was actually confirmed at drop-off.
+    const confirmed = [
+      b.vaccinesVerified ? 'vaccines verified' : null,
+      b.feedingConfirmed ? 'feeding plan confirmed' : null,
+      b.medsConfirmed ? 'medication confirmed' : null,
+      b.signatureCaptured ? 'owner signature captured' : null,
+    ].filter(Boolean);
+    const parts = [
+      confirmed.length ? `Checklist: ${confirmed.join(', ')}.` : null,
+      b.belongings?.trim() ? `Belongings: ${b.belongings.trim()}.` : null,
+    ].filter(Boolean);
+
+    return transition(
+      req.tenant.schemaName,
+      req.params.bookingId,
+      'checked_in',
+      'checkin',
+      b.staffName,
+      reply,
+      parts.length ? parts.join(' ') : undefined,
+    );
+  });
   app.post<{ Params: { bookingId: string }; Body: { staffName?: string } }>(
     '/bookings/:bookingId/check-out',
     async (req, reply) => {
@@ -120,6 +148,7 @@ async function transition(
   eventType: 'checkin' | 'checkout',
   staffName: string | undefined,
   reply: { code: (n: number) => { send: (b: unknown) => unknown } },
+  note?: string,
 ) {
   // Legal transitions only: confirmed/requested → checked_in → checked_out.
   const allowedFrom = status === 'checked_in' ? ['requested', 'confirmed'] : ['checked_in'];
@@ -134,8 +163,9 @@ async function transition(
       return reply.code(409).send({ error: `Booking is not in a state that allows ${status}` });
     }
     await db.query(
-      `INSERT INTO care_events (booking_id, pet_id, type, staff_name) VALUES ($1, $2, $3, $4)`,
-      [bookingId, rows[0].pet_id, eventType, staffName ?? null],
+      `INSERT INTO care_events (booking_id, pet_id, type, staff_name, note)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [bookingId, rows[0].pet_id, eventType, staffName ?? null, note ?? null],
     );
     return { id: rows[0].id, status: rows[0].status };
   });

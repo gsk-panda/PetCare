@@ -160,13 +160,27 @@ export async function createBooking(booking: NewBooking): Promise<{ id: string }
   return res.json() as Promise<{ id: string }>;
 }
 
-export async function checkIn(bookingId: string): Promise<void> {
+export interface CheckInChecklist {
+  belongings?: string;
+  feedingConfirmed?: boolean;
+  medsConfirmed?: boolean;
+  vaccinesVerified?: boolean;
+  signatureCaptured?: boolean;
+}
+
+export async function checkIn(
+  bookingId: string,
+  checklist: CheckInChecklist = {},
+): Promise<void> {
   const res = await fetch(`/api/${TENANT_SLUG}/bookings/${bookingId}/check-in`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ staffName: 'Front desk' }),
+    body: JSON.stringify({ staffName: 'Front desk', ...checklist }),
   });
-  if (!res.ok) throw new Error(`Check-in failed: ${res.status}`);
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Check-in failed (${res.status})`);
+  }
 }
 
 export async function checkOut(bookingId: string): Promise<void> {

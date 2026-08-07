@@ -35,8 +35,10 @@ await withTenant(tenant.schemaName, async (db) => {
     );
     runIds.set(code, rows[0].id);
   };
+  // 56 boarding spaces, matching the facility described in the mockups.
   for (let i = 1; i <= 8; i++) await addRun(`A${i}`, 'Suites · A wing', 'suite', 1, i);
-  for (let i = 1; i <= 12; i++) await addRun(`B${i}`, 'Standard runs · B wing', 'run', 1, i);
+  for (let i = 1; i <= 24; i++) await addRun(`B${i}`, 'Standard runs · B wing', 'run', 1, i);
+  for (let i = 1; i <= 24; i++) await addRun(`C${i}`, 'Standard runs · C wing', 'run', 1, i);
   await addRun('GROUP1', 'Daycare play groups', 'playgroup', 12, 1);
   await addRun('GROUP2', 'Daycare play groups', 'playgroup', 14, 2);
   await addRun('GROUP3', 'Daycare play groups', 'playgroup', 8, 3);
@@ -190,6 +192,140 @@ await withTenant(tenant.schemaName, async (db) => {
   await book('Moose', 'boarding', 'confirmed', 0, 2, 'B7', 'Vaccine expiring — verify at drop-off');
   await book('Frida', 'boarding', 'checked_in', -5, 10, 'B9');
   await book('Peanut', 'boarding', 'checked_in', -1, 4, 'B12');
+
+  // --- Generated cohort ----------------------------------------------------
+  // The named families above are the ones drawn in the mockups; these fill the
+  // rest of the facility so the board and calendar look like a real Friday.
+  // Deterministic PRNG so every reseed produces the identical facility.
+  let seedState = 20260807;
+  const rnd = () => {
+    seedState = (seedState * 1664525 + 1013904223) % 4294967296;
+    return seedState / 4294967296;
+  };
+  const pick = <T>(arr: readonly T[]): T => arr[Math.floor(rnd() * arr.length)] as T;
+  const between = (lo: number, hi: number) => lo + Math.floor(rnd() * (hi - lo + 1));
+
+  const DOG_NAMES = [
+    'Archie', 'Basil', 'Bear', 'Bella', 'Bingo', 'Bodhi', 'Bruno', 'Cash', 'Chai', 'Cocoa',
+    'Daisy', 'Dexter', 'Django', 'Ellie', 'Fern', 'Figaro', 'Finn', 'Gemma', 'Ginger', 'Gizmo',
+    'Hazel', 'Hopper', 'Indy', 'Iris', 'Jasper', 'Juno', 'Kiwi', 'Koda', 'Lacey', 'Leo',
+    'Lola', 'Louie', 'Maple', 'Marlow', 'Maya', 'Miso', 'Mochi', 'Murphy', 'Nala', 'Nutmeg',
+    'Odin', 'Otis', 'Pancake', 'Pickle', 'Piper', 'Pluto', 'Poppy', 'Quincy', 'Reese', 'Remy',
+    'Rosie', 'Rusty', 'Sadie', 'Sage', 'Shadow', 'Simba', 'Sunny', 'Tofu', 'Truffle', 'Willow',
+    'Winston', 'Yuki', 'Zeke', 'Zola',
+  ];
+  const BREEDS: ReadonlyArray<readonly [string, number, number]> = [
+    ['Labrador Retriever', 55, 80], ['Goldendoodle', 40, 65], ['Cavapoo', 12, 22],
+    ['Australian Cattle Dog', 35, 50], ['Great Dane', 110, 150], ['Cocker Spaniel', 20, 30],
+    ['Jack Russell Terrier', 13, 18], ['Bernedoodle', 55, 85], ['Vizsla', 45, 60],
+    ['Shih Tzu', 9, 16], ['Rottweiler', 85, 120], ['Whippet', 25, 40],
+    ['Yorkshire Terrier', 5, 9], ['Samoyed', 45, 65], ['Basset Hound', 45, 65],
+    ['Border Terrier', 12, 16], ['Weimaraner', 55, 85], ['Havanese', 9, 14],
+    ['Mixed breed', 20, 70], ['Catahoula mix', 45, 70],
+  ];
+  const OWNER_FIRST = [
+    'Alex', 'Bianca', 'Carlos', 'Dana', 'Eli', 'Farrah', 'Gina', 'Hank', 'Imani', 'Jonah',
+    'Kira', 'Liam', 'Marisol', 'Nadia', 'Oscar', 'Paula', 'Quinn', 'Rafael', 'Simone', 'Theo',
+    'Uma', 'Vince', 'Wendy', 'Xavier', 'Yara', 'Zach',
+  ];
+  const OWNER_LAST = [
+    'Abbott', 'Barros', 'Chen', 'Delgado', 'Ericsson', 'Fontaine', 'Gallagher', 'Huang',
+    'Iverson', 'Jarvis', 'Kaplan', 'Lindqvist', 'Mercado', 'Novak', "O'Rourke", 'Petrov',
+    'Quintero', 'Rasmussen', 'Sandoval', 'Tremblay', 'Ueda', 'Vasquez', 'Whitaker', 'Yoon',
+  ];
+  const COLORS = [
+    '#C98A4B', '#6B7FA8', '#8A6BA8', '#4E937E', '#B0793F', '#57705F', '#7C6BA8', '#C0684B',
+    '#D98E2B', '#4A7FB5', '#66756F', '#3E6459', '#A85A7A', '#8A5A3A', '#33556B', '#C4914E',
+  ];
+
+  const usedNames = new Set(petIds.keys());
+  const pool: string[] = [];
+  let ownerIdx = 0;
+  for (const dogName of DOG_NAMES) {
+    if (usedNames.has(dogName)) continue;
+    usedNames.add(dogName);
+    const [breed, lo, hi] = pick(BREEDS);
+    const first = OWNER_FIRST[ownerIdx % OWNER_FIRST.length] as string;
+    const last = OWNER_LAST[Math.floor(ownerIdx / OWNER_FIRST.length) % OWNER_LAST.length] as string;
+    ownerIdx += 1;
+    await addFamily(
+      first,
+      last,
+      `(555) 0${between(10, 19)}-${between(1000, 9999)}`,
+      {
+        smsOptIn: rnd() > 0.2,
+        balanceCents: rnd() > 0.85 ? between(1, 12) * 500 : 0,
+        isNew: rnd() > 0.9,
+        emergency: rnd() > 0.5 ? [`${pick(OWNER_FIRST)} ${last}`, `(555) 0${between(10, 19)}-${between(1000, 9999)}`] : undefined,
+      },
+      [
+        {
+          name: dogName,
+          breed,
+          sex: rnd() > 0.5 ? 'M' : 'F',
+          weight: between(lo, hi),
+          color: pick(COLORS),
+          feeding: rnd() > 0.6 ? 'Owner-provided food · 1.5 cups AM / 1.5 cups PM' : undefined,
+          meds: rnd() > 0.82 ? 'Daily allergy tablet with AM meal' : undefined,
+          allergies: rnd() > 0.85 ? 'Grain sensitivity' : undefined,
+        },
+      ],
+    );
+    pool.push(dogName);
+    // A couple of vaccine records each, with a slice expiring inside the window.
+    await vax(dogName, 'Rabies (3-yr)', between(120, 900));
+    await vax(dogName, 'DHPP', between(60, 700));
+    await vax(dogName, 'Bordetella', rnd() > 0.8 ? between(2, 40) : between(120, 330));
+  }
+
+  // Fill the rest of the facility. Hero pets already hold A1-A5, A8, B1-B7,
+  // B9 and B12; everything else is fair game.
+  const heroRuns = new Set(['A1', 'A2', 'A3', 'A4', 'A5', 'A8', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B9', 'B12']);
+  const openRuns = [...runIds.keys()].filter(
+    (code) => !code.startsWith('GROUP') && !heroRuns.has(code),
+  );
+
+  let poolIdx = 0;
+  const nextPet = () => pool[poolIdx++ % pool.length] as string;
+
+  // 27 more stays in progress today, so the board sits near 75% occupancy.
+  for (let i = 0; i < 27; i++) {
+    const runCode = openRuns[i] as string;
+    const petName = nextPet();
+    const roll = rnd();
+    if (roll < 0.18) {
+      // Arriving today, not yet checked in.
+      await book(petName, 'boarding', 'confirmed', 0, between(2, 5), runCode);
+    } else if (roll < 0.33) {
+      // Departing today: started N nights ago and ends on today's date.
+      const n = between(1, 4);
+      await book(petName, 'boarding', 'checked_in', -n, n, runCode);
+    } else {
+      const nights = between(2, 9);
+      await book(petName, 'boarding', 'checked_in', -between(1, nights - 1), nights, runCode);
+    }
+  }
+
+  // Daycare today, spread across the three play groups.
+  const groupPlan: Array<[string, number]> = [['GROUP1', 9], ['GROUP2', 10], ['GROUP3', 4]];
+  for (const [group, count] of groupPlan) {
+    for (let i = 0; i < count; i++) {
+      const petName = nextPet();
+      await book(petName, 'daycare', rnd() > 0.35 ? 'checked_in' : 'confirmed', 0, 0, group);
+    }
+  }
+
+  // Upcoming stays and daycare days so the calendar has real depth.
+  for (let d = 1; d <= 13; d++) {
+    const date = new Date(Date.now() + d * 24 * 3600 * 1000);
+    const weekend = date.getDay() === 0 || date.getDay() === 6;
+    for (let i = 0; i < (weekend ? between(7, 10) : between(3, 6)); i++) {
+      await book(nextPet(), 'boarding', 'confirmed', d, between(1, 4), null);
+    }
+    for (let i = 0; i < (weekend ? 2 : between(4, 8)); i++) {
+      await book(nextPet(), 'daycare', 'confirmed', d, 0, pick(['GROUP1', 'GROUP2', 'GROUP3']));
+    }
+  }
 
   // Daycare today
   await book('Luna', 'daycare', 'checked_in', 0, 0, 'GROUP2');

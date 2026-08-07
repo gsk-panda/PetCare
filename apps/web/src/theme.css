@@ -83,6 +83,9 @@ button { font: inherit; border: none; background: none; cursor: pointer; }
 .btn:hover { background: var(--p-primary-deep); }
 .btn.ghost { background: var(--p-primary-tint); color: var(--p-primary); }
 .btn.ghost:hover { background: var(--p-line); }
+.btn:disabled, .btn:disabled:hover {
+  background: var(--p-line); color: var(--p-ink-soft); cursor: not-allowed;
+}
 
 .content { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; }
 
@@ -157,6 +160,34 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 }
 .runact:hover { background: var(--p-primary-deep); }
 .runact:disabled { opacity: 0.6; cursor: default; }
+.occ-entry { display: flex; flex-direction: column; gap: 2px; }
+.occ-entry + .occ-entry {
+  border-top: 1px dashed var(--p-line); margin-top: 5px; padding-top: 5px;
+}
+
+/* Play groups span the grid and list every dog. */
+.run.group { grid-column: 1 / -1; border-left: 4px solid #9cc3b8; }
+.group-hd { display: flex; align-items: baseline; gap: 9px; margin-bottom: 7px; }
+.group-hd b { font-size: 13px; }
+.grouplist { display: flex; flex-wrap: wrap; gap: 6px; }
+.gchip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--p-ground); border: 1px solid var(--p-line);
+  border-radius: 999px; padding: 3px 4px 3px 9px; font-size: 12px; font-weight: 600;
+}
+.gname { display: inline-flex; align-items: center; gap: 6px; }
+.gname:hover { color: var(--p-primary); text-decoration: underline; }
+.gname i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.gmed {
+  font-style: normal; font-size: 9px; font-weight: 800;
+  background: var(--p-bad-tint); color: var(--p-bad); border-radius: 99px; padding: 0 5px;
+}
+.gact {
+  font-size: 10px; font-weight: 800; background: var(--p-primary); color: #fff;
+  border-radius: 999px; padding: 2px 8px;
+}
+.gact:hover { background: var(--p-primary-deep); }
+.gact:disabled { opacity: 0.6; cursor: default; }
 .run .id { font-size: 10px; font-weight: 800; color: var(--p-ink-soft); letter-spacing: 0.05em; }
 .run b { display: block; font-size: 13px; margin-top: 2px; }
 .run small { display: block; font-size: 11px; color: var(--p-ink-soft); line-height: 1.3; }
@@ -195,13 +226,20 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 }
 .evt small { display: block; font-weight: 600; opacity: 0.75; font-size: 10px; }
 .evt.b { background: var(--p-primary-tint); border-color: var(--p-primary); color: var(--p-primary-deep); }
-.evt.b.more { background: transparent; border-color: transparent; color: var(--p-ink-soft); font-weight: 600; padding-left: 11px; }
+.evt-group { display: flex; flex-direction: column; gap: 3px; }
+.evt-label {
+  font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--p-ink-soft); font-weight: 800; padding-top: 3px;
+}
 .evt.d { background: #edf4f1; border-color: #9cc3b8; color: #3e6459; }
 .evt.hold {
   background: var(--p-warn-tint); border-color: var(--p-warn);
   color: #8a5a12; border-left-style: dashed;
 }
-.capline { margin-top: auto; font-size: 10.5px; color: var(--p-ink-soft); font-weight: 600; padding-top: 8px; }
+.capline {
+  font-size: 10.5px; color: var(--p-ink-soft); font-weight: 700;
+  padding-bottom: 8px; border-bottom: 1px solid var(--p-line);
+}
 .capline .meter { margin-top: 4px; }
 
 /* ---- Pet profile ---- */
@@ -274,6 +312,26 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   color: var(--p-ink-soft); background: var(--p-surface);
 }
 .segmented button.on { background: var(--p-primary); color: #fff; }
+/* ---- Check-in checklist ---- */
+.checkin-sub { font-size: 12.5px; color: var(--p-ink-soft); }
+.check-row {
+  display: flex; gap: 10px; align-items: flex-start;
+  border: 1px solid var(--p-line); border-radius: 10px; padding: 10px 12px; cursor: pointer;
+}
+.check-row:hover { border-color: var(--p-primary); }
+.check-row input { width: 17px; height: 17px; margin-top: 1px; accent-color: var(--p-primary); flex-shrink: 0; }
+.check-row b { display: block; font-size: 13px; }
+.check-row small { display: block; color: var(--p-ink-soft); font-size: 11.5px; line-height: 1.35; }
+.check-input {
+  font: inherit; font-size: 13px; border: 1px solid var(--p-line); border-radius: 8px;
+  padding: 8px 10px; margin-top: -6px; width: 100%;
+}
+.check-input:focus-visible { outline: 2px solid var(--p-primary); border-color: var(--p-primary); }
+.allergy-note {
+  background: var(--p-warn-tint); color: #8a5a12; border-radius: 8px;
+  padding: 8px 12px; font-size: 12.5px;
+}
+
 .form-error {
   background: var(--p-bad-tint); color: var(--p-bad); border-radius: 8px;
   padding: 9px 12px; font-size: 12.5px; font-weight: 600;
