@@ -21,6 +21,7 @@ export function Dashboard() {
   const [arrivals, setArrivals] = useState<BookingRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [booking, setBooking] = useState(false);
+  const [arrivalFilter, setArrivalFilter] = useState<ArrivalFilter>('all');
 
   const load = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -53,6 +54,16 @@ export function Dashboard() {
   const maxWeek = Math.max(1, ...stats.next7Days.map((d) => d.boarding + d.daycare));
   const todayStr = new Date().toLocaleDateString(undefined, {
     weekday: 'long', month: 'long', day: 'numeric',
+  });
+
+  const boardingCount = arrivals.filter((b) => b.serviceType === 'boarding').length;
+  const daycareCount = arrivals.filter((b) => b.serviceType === 'daycare').length;
+  const waitingCount = arrivals.filter((b) => b.status !== 'checked_in').length;
+  const shownArrivals = arrivals.filter((b) => {
+    if (arrivalFilter === 'boarding') return b.serviceType === 'boarding';
+    if (arrivalFilter === 'daycare') return b.serviceType === 'daycare';
+    if (arrivalFilter === 'waiting') return b.status !== 'checked_in';
+    return true;
   });
 
   return (
@@ -105,10 +116,31 @@ export function Dashboard() {
           <div className="card">
             <div className="hd">
               <b>Today's arrivals</b>
-              <span className="cnt">{arrivals.length}</span>
-              <Link to="/board" style={{ marginLeft: 'auto', color: 'var(--p-primary)', fontWeight: 700, fontSize: 12.5 }}>
+              <span className="cnt">{shownArrivals.length}</span>
+              <Link to="/board" className="linkish" style={{ marginLeft: 'auto', fontSize: 12.5 }}>
                 Open board
               </Link>
+            </div>
+            <div className="filterbar tight">
+              <div className="segmented small">
+                {(
+                  [
+                    ['all', `All ${arrivals.length}`],
+                    ['boarding', `Boarding ${boardingCount}`],
+                    ['daycare', `Daycare ${daycareCount}`],
+                    ['waiting', `Not in yet ${waitingCount}`],
+                  ] as Array<[ArrivalFilter, string]>
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={arrivalFilter === key ? 'on' : ''}
+                    onClick={() => setArrivalFilter(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
             {arrivals.length === 0 ? (
               <div className="empty">
@@ -119,12 +151,13 @@ export function Dashboard() {
                 </small>
               </div>
             ) : (
-              <table className="tbl">
+              <div className="tbl-scroll">
+              <table className="tbl sticky">
                 <thead>
                   <tr><th>Pet</th><th>Service</th><th>Run</th><th>Status</th></tr>
                 </thead>
                 <tbody>
-                  {arrivals.map((b) => (
+                  {shownArrivals.map((b) => (
                     <tr key={b.id}>
                       <td>
                         <div className="petcell">
@@ -148,6 +181,7 @@ export function Dashboard() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
 
@@ -182,6 +216,8 @@ export function Dashboard() {
     </>
   );
 }
+
+type ArrivalFilter = 'all' | 'boarding' | 'daycare' | 'waiting';
 
 function nights(b: BookingRow): number {
   return Math.round(

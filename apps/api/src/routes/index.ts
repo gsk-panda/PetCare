@@ -8,6 +8,7 @@ import { calendarRoutes } from './calendar.js';
 import { runRoutes } from './runs.js';
 import { careRoutes } from './care.js';
 import { alertRoutes } from './alerts.js';
+import { settingsRoutes } from './settings.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -45,4 +46,5 @@ export async function tenantRoutes(app: FastifyInstance): Promise<void> {
   await app.register(runRoutes);
   await app.register(careRoutes);
   await app.register(alertRoutes);
+  await app.register(settingsRoutes);
 }

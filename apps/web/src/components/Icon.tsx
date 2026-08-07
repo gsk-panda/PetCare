@@ -14,7 +14,10 @@ export type IconName =
   | 'plus'
   | 'print'
   | 'download'
-  | 'refresh';
+  | 'refresh'
+  | 'daycare'
+  | 'settings'
+  | 'search';
 
 const PATHS: Record<IconName, JSX.Element> = {
   dashboard: (
@@ -67,6 +70,25 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <path d="M20 11a8 8 0 1 0-.6 4" />
       <path d="M20 5v6h-6" />
+    </>
+  ),
+  daycare: (
+    <>
+      <circle cx="7.5" cy="9" r="2.75" />
+      <circle cx="16.5" cy="9" r="2.75" />
+      <path d="M3.5 19a4 4 0 0 1 8 0M12.5 19a4 4 0 0 1 8 0" />
+    </>
+  ),
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4.5 4.5" />
     </>
   ),
 };

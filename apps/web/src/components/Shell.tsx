@@ -7,8 +7,10 @@ const links: Array<{ to: string; label: string; icon: IconName }> = [
   { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/board', label: 'Facility board', icon: 'board' },
   { to: '/care', label: 'Care rounds', icon: 'care' },
-  { to: '/calendar', label: 'Calendar', icon: 'calendar' },
+  { to: '/calendar/boarding', label: 'Boarding', icon: 'calendar' },
+  { to: '/calendar/daycare', label: 'Daycare', icon: 'daycare' },
   { to: '/clients', label: 'Clients & pets', icon: 'clients' },
+  { to: '/settings', label: 'Settings', icon: 'settings' },
 ];
 
 export function Shell({ tenant, children }: { tenant: TenantMeta; children: ReactNode }) {

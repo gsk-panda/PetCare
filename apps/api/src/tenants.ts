@@ -9,12 +9,12 @@ export interface TenantRecord extends Tenant {
 const DEFAULT_THEME: TenantTheme = {
   appName: 'Denly',
   logoInitials: 'D',
-  primary: '#E51B24',
-  primaryDeep: '#B31219',
-  primaryTint: '#FDE9EA',
-  accent: '#F2B705',
-  accentText: '#3A2A02',
-  chrome: '#2B161B',
+  primary: '#0E8F8F',
+  primaryDeep: '#0A6F6F',
+  primaryTint: '#E3F2F2',
+  accent: '#D98324',
+  accentText: '#2A1A06',
+  chrome: '#14171A',
 };
 
 function rowToTenant(row: {

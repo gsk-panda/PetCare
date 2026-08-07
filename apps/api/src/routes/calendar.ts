@@ -52,17 +52,26 @@ export async function calendarRoutes(app: FastifyInstance): Promise<void> {
       const bookingsRes = await db.query(
           `SELECT b.id, b.service_type, b.status,
                   b.start_date::text, b.end_date::text,
-                  p.name AS pet_name, p.breed, p.avatar_color,
+                  p.id AS pet_id, p.name AS pet_name, p.breed, p.avatar_color,
+                  (p.medication_notes IS NOT NULL) AS has_meds,
                   c.first_name || ' ' || c.last_name AS client_name,
-                  r.code AS run_code
+                  r.code AS run_code, r.label AS run_label
            FROM bookings b
            JOIN pets p ON p.id = b.pet_id
            JOIN clients c ON c.id = b.client_id
            LEFT JOIN runs r ON r.id = b.run_id
            WHERE b.status <> 'canceled'
              AND b.start_date <= $2::date AND b.end_date >= $1::date
-           ORDER BY b.service_type, b.start_date, p.name`,
+           ORDER BY b.start_date, b.end_date DESC, p.name`,
         [from, to],
+      );
+
+      // Active play groups drive the daycare view's columns, so a single-group
+      // facility renders one column rather than three mostly-empty ones.
+      const groupsRes = await db.query(
+        `SELECT id, code, label, capacity FROM runs
+         WHERE kind = 'playgroup' AND active
+         ORDER BY display_order, code`,
       );
 
       return {
@@ -76,10 +85,19 @@ export async function calendarRoutes(app: FastifyInstance): Promise<void> {
           daycare: r.daycare,
           pending: r.pending,
         })),
+        groups: groupsRes.rows.map((g) => ({
+          id: g.id,
+          code: g.code,
+          label: g.label ?? g.code,
+          capacity: g.capacity,
+        })),
         bookings: bookingsRes.rows.map((b) => ({
           id: b.id,
           serviceType: b.service_type,
           status: b.status,
+          petId: b.pet_id,
+          hasMeds: b.has_meds,
+          runLabel: b.run_label,
           startDate: b.start_date,
           endDate: b.end_date,
           petName: b.pet_name,

@@ -5,7 +5,9 @@ import { Shell } from './components/Shell';
 import { Dashboard } from './pages/Dashboard';
 import { Board } from './pages/Board';
 import { Clients } from './pages/Clients';
-import { Calendar } from './pages/Calendar';
+import { BoardingCalendar } from './pages/BoardingCalendar';
+import { DaycareCalendar } from './pages/DaycareCalendar';
+import { Settings } from './pages/Settings';
 import { PetProfile } from './pages/PetProfile';
 import { CareRounds } from './pages/CareRounds';
 import { CareLogReport } from './pages/CareLogReport';
@@ -46,7 +48,10 @@ export default function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/board" element={<Board />} />
-        <Route path="/calendar" element={<Calendar />} />
+        <Route path="/calendar" element={<Navigate to="/calendar/boarding" replace />} />
+        <Route path="/calendar/boarding" element={<BoardingCalendar />} />
+        <Route path="/calendar/daycare" element={<DaycareCalendar />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/clients" element={<Clients />} />
         <Route path="/care" element={<CareRounds />} />
         <Route path="/reports/care-log" element={<CareLogReport />} />

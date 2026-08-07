@@ -77,11 +77,55 @@ export interface CalendarDay {
   pending: number;
 }
 
+export interface PlayGroup {
+  id: string;
+  code: string;
+  label: string;
+  capacity: number;
+}
+
+export interface CalendarBooking extends BookingRow {
+  petId: string;
+  hasMeds: boolean;
+  runLabel: string | null;
+}
+
 export interface CalendarResponse {
   capacity: { boarding: number; daycare: number };
   days: CalendarDay[];
-  bookings: BookingRow[];
+  groups: PlayGroup[];
+  bookings: CalendarBooking[];
 }
+
+export interface PlayGroupSetting extends PlayGroup {
+  displayOrder: number;
+  active: boolean;
+  bookedToday: number;
+}
+
+export const fetchPlayGroups = () =>
+  get<{ groups: PlayGroupSetting[] }>(`/api/${TENANT_SLUG}/settings/play-groups`);
+
+async function send<T>(path: string, method: string, body: unknown): Promise<T> {
+  const res = await fetch(`/api/${TENANT_SLUG}${path}`, {
+    method,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const parsed = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(parsed?.error ?? `Request failed (${res.status})`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export const createPlayGroup = (body: { label: string; capacity: number }) =>
+  send<{ id: string; code: string }>('/settings/play-groups', 'POST', body);
+
+export const updatePlayGroup = (
+  groupId: string,
+  body: { label?: string; capacity?: number; active?: boolean },
+) => send<PlayGroupSetting>(`/settings/play-groups/${groupId}`, 'PATCH', body);
 
 export const fetchCalendar = (from: string, to: string) =>
   get<CalendarResponse>(`/api/${TENANT_SLUG}/calendar?from=${from}&to=${to}`);
