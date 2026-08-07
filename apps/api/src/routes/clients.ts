@@ -72,6 +72,32 @@ export async function clientRoutes(app: FastifyInstance): Promise<void> {
          FROM vaccinations WHERE pet_id = $1 ORDER BY expires_on`,
         [p.id],
       );
+      // The pet's active (or most recent) stay, with the intake captured at
+      // drop-off, so the profile shows how this pet is being cared for now.
+      const { rows: stayRows } = await db.query(
+        `SELECT b.id, b.service_type, b.status, b.start_date::text, b.end_date::text,
+                r.code AS run_code,
+                i.belongings, i.collar_type, i.food_source, i.food_description,
+                i.feeding_amount, i.feeding_times, i.bowl_type,
+                i.treats_allowed, i.treats_notes, i.bones_allowed, i.bones_notes,
+                i.recorded_by, i.recorded_at
+         FROM bookings b
+         LEFT JOIN runs r ON r.id = b.run_id
+         LEFT JOIN stay_intake i ON i.booking_id = b.id
+         WHERE b.pet_id = $1 AND b.status IN ('checked_in', 'checked_out')
+         ORDER BY (b.status = 'checked_in') DESC, b.start_date DESC
+         LIMIT 1`,
+        [p.id],
+      );
+      const stay = stayRows[0];
+      const { rows: stayMeds } = stay
+        ? await db.query(
+            `SELECT id, name, dose, schedule, with_food, notes
+             FROM stay_medications WHERE booking_id = $1 ORDER BY created_at`,
+            [stay.id],
+          )
+        : { rows: [] };
+
       return {
         id: p.id,
         name: p.name,
@@ -98,6 +124,41 @@ export async function clientRoutes(app: FastifyInstance): Promise<void> {
           expiresOn: v.expires_on,
           verified: v.verified,
         })),
+        currentStay: stay
+          ? {
+              bookingId: stay.id,
+              serviceType: stay.service_type,
+              status: stay.status,
+              startDate: stay.start_date,
+              endDate: stay.end_date,
+              runCode: stay.run_code,
+              intake: stay.recorded_at
+                ? {
+                    belongings: stay.belongings,
+                    collarType: stay.collar_type,
+                    foodSource: stay.food_source,
+                    foodDescription: stay.food_description,
+                    feedingAmount: stay.feeding_amount,
+                    feedingTimes: stay.feeding_times ?? [],
+                    bowlType: stay.bowl_type,
+                    treatsAllowed: stay.treats_allowed,
+                    treatsNotes: stay.treats_notes,
+                    bonesAllowed: stay.bones_allowed,
+                    bonesNotes: stay.bones_notes,
+                    recordedBy: stay.recorded_by,
+                    recordedAt: stay.recorded_at,
+                  }
+                : null,
+              medications: stayMeds.map((m) => ({
+                id: m.id,
+                name: m.name,
+                dose: m.dose,
+                schedule: m.schedule,
+                withFood: m.with_food,
+                notes: m.notes,
+              })),
+            }
+          : null,
       };
     });
   });

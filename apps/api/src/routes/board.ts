@@ -1,6 +1,38 @@
 import type { FastifyInstance } from 'fastify';
 import { withTenant } from '../db.js';
 
+export interface StayMedicationInput {
+  name: string;
+  dose?: string;
+  schedule?: string;
+  withFood?: boolean;
+  notes?: string;
+}
+
+export interface StayIntakeInput {
+  belongings?: string;
+  collarType?: string;
+  foodSource?: 'owner' | 'house';
+  foodDescription?: string;
+  feedingAmount?: string;
+  feedingTimes?: string[];
+  bowlType?: string;
+  treatsAllowed?: boolean;
+  treatsNotes?: string;
+  bonesAllowed?: boolean;
+  bonesNotes?: string;
+  medications?: StayMedicationInput[];
+}
+
+interface CheckInBody {
+  staffName?: string;
+  vaccinesVerified?: boolean;
+  feedingConfirmed?: boolean;
+  medsConfirmed?: boolean;
+  signatureCaptured?: boolean;
+  intake?: StayIntakeInput;
+}
+
 interface BoardRow {
   run_id: string;
   code: string;
@@ -96,21 +128,27 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
     });
   });
 
-  // Check-in / check-out state transitions from the board.
+  // Check-in captures the drop-off intake alongside the state change: what the
+  // owner brought, how this pet eats on this stay, and the medication schedule.
   app.post<{
     Params: { bookingId: string };
-    Body: {
-      staffName?: string;
-      belongings?: string;
-      feedingConfirmed?: boolean;
-      medsConfirmed?: boolean;
-      vaccinesVerified?: boolean;
-      signatureCaptured?: boolean;
-    };
+    Body: CheckInBody;
   }>('/bookings/:bookingId/check-in', async (req, reply) => {
     const b = req.body ?? {};
-    // Summarise the front-desk checklist onto the check-in event so the audit
-    // trail records what was actually confirmed at drop-off.
+    const intake = b.intake;
+
+    const meds = (intake?.medications ?? [])
+      .filter((m) => m.name?.trim())
+      .map((m) => ({
+        name: m.name.trim(),
+        dose: m.dose?.trim() || null,
+        schedule: m.schedule?.trim() || 'AM',
+        withFood: m.withFood ?? true,
+        notes: m.notes?.trim() || null,
+      }));
+
+    // Summarise the checklist onto the care event so the audit trail records
+    // what was confirmed, while the structured detail goes to stay_intake.
     const confirmed = [
       b.vaccinesVerified ? 'vaccines verified' : null,
       b.feedingConfirmed ? 'feeding plan confirmed' : null,
@@ -119,18 +157,87 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
     ].filter(Boolean);
     const parts = [
       confirmed.length ? `Checklist: ${confirmed.join(', ')}.` : null,
-      b.belongings?.trim() ? `Belongings: ${b.belongings.trim()}.` : null,
+      intake?.belongings?.trim() ? `Belongings: ${intake.belongings.trim()}.` : null,
+      meds.length ? `${meds.length} medication${meds.length === 1 ? '' : 's'} scheduled.` : null,
     ].filter(Boolean);
 
-    return transition(
-      req.tenant.schemaName,
-      req.params.bookingId,
-      'checked_in',
-      'checkin',
-      b.staffName,
-      reply,
-      parts.length ? parts.join(' ') : undefined,
-    );
+    return withTenant(req.tenant.schemaName, async (db) => {
+      await db.query('BEGIN');
+      try {
+        const { rows } = await db.query(
+          `UPDATE bookings SET status = 'checked_in'
+           WHERE id = $1 AND status IN ('requested', 'confirmed')
+           RETURNING id, pet_id`,
+          [req.params.bookingId],
+        );
+        if (!rows[0]) {
+          await db.query('ROLLBACK');
+          return reply.code(409).send({ error: 'Booking is not awaiting check-in' });
+        }
+
+        await db.query(
+          `INSERT INTO care_events (booking_id, pet_id, type, staff_name, note)
+           VALUES ($1, $2, 'checkin', $3, $4)`,
+          [rows[0].id, rows[0].pet_id, b.staffName ?? null, parts.join(' ') || null],
+        );
+
+        if (intake) {
+          await db.query(
+            `INSERT INTO stay_intake (
+               booking_id, belongings, collar_type, food_source, food_description,
+               feeding_amount, feeding_times, bowl_type, treats_allowed, treats_notes,
+               bones_allowed, bones_notes, recorded_by)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+             ON CONFLICT (booking_id) DO UPDATE SET
+               belongings = EXCLUDED.belongings,
+               collar_type = EXCLUDED.collar_type,
+               food_source = EXCLUDED.food_source,
+               food_description = EXCLUDED.food_description,
+               feeding_amount = EXCLUDED.feeding_amount,
+               feeding_times = EXCLUDED.feeding_times,
+               bowl_type = EXCLUDED.bowl_type,
+               treats_allowed = EXCLUDED.treats_allowed,
+               treats_notes = EXCLUDED.treats_notes,
+               bones_allowed = EXCLUDED.bones_allowed,
+               bones_notes = EXCLUDED.bones_notes,
+               recorded_by = EXCLUDED.recorded_by,
+               recorded_at = now()`,
+            [
+              rows[0].id,
+              intake.belongings?.trim() || null,
+              intake.collarType?.trim() || null,
+              intake.foodSource === 'house' || intake.foodSource === 'owner'
+                ? intake.foodSource
+                : null,
+              intake.foodDescription?.trim() || null,
+              intake.feedingAmount?.trim() || null,
+              intake.feedingTimes ?? [],
+              intake.bowlType?.trim() || null,
+              intake.treatsAllowed ?? true,
+              intake.treatsNotes?.trim() || null,
+              intake.bonesAllowed ?? false,
+              intake.bonesNotes?.trim() || null,
+              b.staffName ?? null,
+            ],
+          );
+
+          await db.query('DELETE FROM stay_medications WHERE booking_id = $1', [rows[0].id]);
+          for (const m of meds) {
+            await db.query(
+              `INSERT INTO stay_medications (booking_id, name, dose, schedule, with_food, notes)
+               VALUES ($1,$2,$3,$4,$5,$6)`,
+              [rows[0].id, m.name, m.dose, m.schedule, m.withFood, m.notes],
+            );
+          }
+        }
+
+        await db.query('COMMIT');
+        return { id: rows[0].id, status: 'checked_in', medications: meds.length };
+      } catch (err) {
+        await db.query('ROLLBACK');
+        throw err;
+      }
+    });
   });
   app.post<{ Params: { bookingId: string }; Body: { staffName?: string } }>(
     '/bookings/:bookingId/check-out',

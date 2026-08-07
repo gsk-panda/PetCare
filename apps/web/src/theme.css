@@ -327,6 +327,54 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   padding: 8px 10px; margin-top: -6px; width: 100%;
 }
 .check-input:focus-visible { outline: 2px solid var(--p-primary); border-color: var(--p-primary); }
+.modal.wide { width: min(680px, 100%); }
+.check-row.compact { border: none; padding: 2px 0; }
+.check-row.compact b { font-size: 12.5px; }
+
+.intake {
+  border: 1px solid var(--p-line); border-radius: 10px;
+  padding: 12px; display: flex; flex-direction: column; gap: 9px;
+}
+.intake legend {
+  font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--p-primary); font-weight: 800; padding: 0 6px;
+}
+.sub-label {
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--p-ink-soft); font-weight: 700;
+}
+.chipset { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  border: 1px solid var(--p-line); background: var(--p-surface); border-radius: 999px;
+  padding: 5px 12px; font-size: 12.5px; font-weight: 600; color: var(--p-ink-soft);
+}
+.chip:hover { border-color: var(--p-primary); color: var(--p-primary); }
+.chip.on { background: var(--p-primary); border-color: var(--p-primary); color: #fff; }
+
+.inline-field { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.inline-field > span {
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--p-ink-soft); font-weight: 700;
+}
+.inline-field input, .inline-field select {
+  font: inherit; font-size: 13px; border: 1px solid var(--p-line);
+  border-radius: 8px; padding: 7px 9px; width: 100%; background: var(--p-surface);
+  color: var(--p-ink);
+}
+.inline-field input:focus-visible, .inline-field select:focus-visible {
+  outline: 2px solid var(--p-primary); border-color: var(--p-primary);
+}
+.segmented.small button { padding: 6px 0; font-size: 12.5px; }
+
+.med-row {
+  border: 1px dashed var(--p-line); border-radius: 9px; padding: 10px;
+  display: flex; flex-direction: column; gap: 8px; background: var(--p-ground);
+}
+.med-remove {
+  align-self: flex-start; font-size: 11.5px; font-weight: 700; color: var(--p-bad);
+}
+.med-remove:hover { text-decoration: underline; }
+
 .allergy-note {
   background: var(--p-warn-tint); color: #8a5a12; border-radius: 8px;
   padding: 8px 12px; font-size: 12.5px;

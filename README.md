@@ -38,6 +38,21 @@ IDs, so any pet-profile URLs you had open will 404 afterwards.
 | Clients & pets | `/clients` | `GET /api/:tenant/clients` |
 | Pet profile | `/pets/:petId` | `GET /api/:tenant/pets/:petId` |
 
+## Drop-off intake
+
+Check-in captures a per-stay intake record (`stay_intake` + `stay_medications`),
+kept deliberately separate from the pet's standing profile:
+
+- `pets.feeding_notes` / `pets.medication_notes` are the **defaults** — how this
+  pet is usually cared for.
+- `stay_intake` is what the desk **confirmed on the day**, and it can differ:
+  the owner brought different food, no bones this time, a new medication that
+  isn't on the profile yet.
+
+The panel prefills from the profile so the desk edits rather than retypes, and
+the pet profile shows both, side by side. Check-in writes the booking status,
+the care event, the intake row and the medication rows in one transaction.
+
 Booking state transitions are enforced server-side:
 `requested`/`confirmed` → `checked_in` → `checked_out`. Anything else returns
 409, and every transition writes a row to `care_events` as an audit trail.

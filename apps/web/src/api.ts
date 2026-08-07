@@ -107,6 +107,37 @@ export interface PetProfile {
     balanceCents: number;
   };
   vaccinations: Array<{ id: string; vaccine: string; expiresOn: string; verified: boolean }>;
+  currentStay: {
+    bookingId: string;
+    serviceType: 'boarding' | 'daycare';
+    status: string;
+    startDate: string;
+    endDate: string;
+    runCode: string | null;
+    intake: {
+      belongings: string | null;
+      collarType: string | null;
+      foodSource: 'owner' | 'house' | null;
+      foodDescription: string | null;
+      feedingAmount: string | null;
+      feedingTimes: string[];
+      bowlType: string | null;
+      treatsAllowed: boolean;
+      treatsNotes: string | null;
+      bonesAllowed: boolean;
+      bonesNotes: string | null;
+      recordedBy: string | null;
+      recordedAt: string;
+    } | null;
+    medications: Array<{
+      id: string;
+      name: string;
+      dose: string | null;
+      schedule: string;
+      withFood: boolean;
+      notes: string | null;
+    }>;
+  } | null;
 }
 
 export const fetchPet = (petId: string) => get<PetProfile>(`/api/${TENANT_SLUG}/pets/${petId}`);
@@ -160,12 +191,35 @@ export async function createBooking(booking: NewBooking): Promise<{ id: string }
   return res.json() as Promise<{ id: string }>;
 }
 
-export interface CheckInChecklist {
+export interface StayMedication {
+  name: string;
+  dose?: string;
+  schedule?: string;
+  withFood?: boolean;
+  notes?: string;
+}
+
+export interface StayIntake {
   belongings?: string;
+  collarType?: string;
+  foodSource?: 'owner' | 'house';
+  foodDescription?: string;
+  feedingAmount?: string;
+  feedingTimes?: string[];
+  bowlType?: string;
+  treatsAllowed?: boolean;
+  treatsNotes?: string;
+  bonesAllowed?: boolean;
+  bonesNotes?: string;
+  medications?: StayMedication[];
+}
+
+export interface CheckInChecklist {
   feedingConfirmed?: boolean;
   medsConfirmed?: boolean;
   vaccinesVerified?: boolean;
   signatureCaptured?: boolean;
+  intake?: StayIntake;
 }
 
 export async function checkIn(

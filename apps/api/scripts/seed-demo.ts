@@ -21,7 +21,10 @@ await withTenant(tenant.schemaName, async (db) => {
       console.log('cedar-creek already seeded. Re-run with --reset to wipe and reseed.');
       return;
     }
-    await db.query('TRUNCATE care_events, bookings, vaccinations, pets, clients, runs CASCADE');
+    await db.query(
+      `TRUNCATE stay_medications, stay_intake, care_events, bookings,
+                vaccinations, pets, clients, runs CASCADE`,
+    );
     console.log('Wiped existing cedar-creek data.');
   }
 

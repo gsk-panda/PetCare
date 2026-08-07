@@ -45,6 +45,8 @@ export function PetProfile() {
   if (error) return <div className="hint error">Could not load pet: {error}</div>;
   if (!pet) return <div className="hint">Loading pet…</div>;
 
+  const stayIntake = pet.currentStay?.intake ?? null;
+  const stayMeds = pet.currentStay?.medications ?? [];
   const age = ageFrom(pet.birthdate);
   const expiringSoon = pet.vaccinations.some(
     (v) => daysUntil(v.expiresOn) <= REMINDER_WINDOW_DAYS,
@@ -130,7 +132,7 @@ export function PetProfile() {
 
             <div className="card">
               <div className="hd">
-                <b>Feeding &amp; medication</b>
+                <b>Standing care plan</b>
               </div>
               <dl className="kv">
                 <dt>Feeding</dt>
@@ -141,6 +143,93 @@ export function PetProfile() {
                 <dd>{pet.allergyNotes ?? 'None recorded'}</dd>
               </dl>
             </div>
+
+            {stayIntake && (
+              <div className="card">
+                <div className="hd">
+                  <b>This stay · drop-off intake</b>
+                  {pet.currentStay?.runCode && (
+                    <span className="pill prim">{pet.currentStay.runCode}</span>
+                  )}
+                </div>
+                <dl className="kv">
+                  <dt>Belongings</dt>
+                  <dd>{stayIntake.belongings ?? 'Nothing logged'}</dd>
+                  <dt>Collar</dt>
+                  <dd>{stayIntake.collarType ?? '—'}</dd>
+                  <dt>Food</dt>
+                  <dd>
+                    {stayIntake.foodSource === 'house' ? 'House food' : 'Owner-provided'}
+                    {stayIntake.foodDescription ? ` · ${stayIntake.foodDescription}` : ''}
+                  </dd>
+                  <dt>Feeding</dt>
+                  <dd>
+                    {[
+                      stayIntake.feedingAmount,
+                      stayIntake.feedingTimes.join(', ') || null,
+                      stayIntake.bowlType ? `${stayIntake.bowlType} bowl` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || '—'}
+                  </dd>
+                  <dt>Treats</dt>
+                  <dd>
+                    {stayIntake.treatsAllowed ? 'Allowed' : 'Not allowed'}
+                    {stayIntake.treatsNotes ? ` · ${stayIntake.treatsNotes}` : ''}
+                  </dd>
+                  <dt>Bones / chews</dt>
+                  <dd>
+                    {stayIntake.bonesAllowed ? 'Allowed' : 'Not allowed'}
+                    {stayIntake.bonesNotes ? ` · ${stayIntake.bonesNotes}` : ''}
+                  </dd>
+                  <dt>Recorded</dt>
+                  <dd>
+                    {stayIntake.recordedBy ?? 'front desk'} ·{' '}
+                    {new Date(stayIntake.recordedAt).toLocaleString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </dd>
+                </dl>
+              </div>
+            )}
+
+            {stayMeds.length > 0 && (
+              <div className="card">
+                <div className="hd">
+                  <b>Medication schedule · this stay</b>
+                  <span className="cnt">{stayMeds.length}</span>
+                </div>
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th>Medication</th>
+                      <th>Dose</th>
+                      <th>When</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stayMeds.map((m) => (
+                      <tr key={m.id}>
+                        <td>
+                          <b>{m.name}</b>
+                          {m.notes && <small style={{ display: 'block', color: 'var(--p-ink-soft)' }}>{m.notes}</small>}
+                        </td>
+                        <td>{m.dose ?? '—'}</td>
+                        <td>
+                          {m.schedule}
+                          <small style={{ display: 'block', color: 'var(--p-ink-soft)' }}>
+                            {m.withFood ? 'with food' : 'any time'}
+                          </small>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <div className="card">
