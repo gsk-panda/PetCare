@@ -256,9 +256,10 @@ input, select, textarea { font: inherit; color: inherit; }
 .tile .sub { font-size: var(--t-xs); color: var(--ink-3); margin-top: 2px; }
 
 .meter { height: 4px; background: var(--ground); border-radius: var(--r-pill); margin-top: var(--s-2); overflow: hidden; }
+/* No width transition: these render once from loaded data, so animating it
+   would buy nothing and animating width thrashes layout. */
 .meter i {
   display: block; height: 100%; border-radius: var(--r-pill); background: var(--brand);
-  transition: width var(--dur) var(--ease);
 }
 .meter i.hot { background: var(--warn); }
 
@@ -308,7 +309,6 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .week .stack {
   display: flex; flex-direction: column; justify-content: flex-end; width: 100%;
   border-radius: var(--r-sm) var(--r-sm) 0 0; overflow: hidden;
-  transition: height var(--dur) var(--ease);
 }
 .week .bar-b { background: var(--brand); }
 .week .bar-d { background: #92b8ac; }

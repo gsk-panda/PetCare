@@ -6,3 +6,8 @@ build/
 .env.local
 .DS_Store
 coverage/
+
+# Impeccable design skill — installed per-developer with `npx impeccable install`.
+# The hook config lives in .claude/settings.local.json, which is already local-only,
+# so vendoring the 147 skill files would ship the rules without the wiring.
+.claude/skills/
