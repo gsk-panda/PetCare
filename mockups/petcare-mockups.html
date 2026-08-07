@@ -1,0 +1,978 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PetCare Platform — Phase 1 Mockups</title>
+<style>
+/* ============ Presentation wrapper tokens ============ */
+:root{
+  --ground:#F6F4F0;
+  --panel:#FFFFFF;
+  --ink:#23282B;
+  --ink-soft:#5B6467;
+  --line:#E3DFD8;
+  --accent:#2F6D62;
+  --accent-soft:#E7EFEC;
+  --frame-shadow:0 24px 60px -24px rgba(30,40,38,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ground:#15181A;
+    --panel:#1D2124;
+    --ink:#E9E7E2;
+    --ink-soft:#9AA3A4;
+    --line:#2C3235;
+    --accent:#6FB3A5;
+    --accent-soft:#22322E;
+    --frame-shadow:0 24px 60px -24px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="light"]{
+  --ground:#F6F4F0; --panel:#FFFFFF; --ink:#23282B; --ink-soft:#5B6467;
+  --line:#E3DFD8; --accent:#2F6D62; --accent-soft:#E7EFEC;
+  --frame-shadow:0 24px 60px -24px rgba(30,40,38,.28);
+}
+:root[data-theme="dark"]{
+  --ground:#15181A; --panel:#1D2124; --ink:#E9E7E2; --ink-soft:#9AA3A4;
+  --line:#2C3235; --accent:#6FB3A5; --accent-soft:#22322E;
+  --frame-shadow:0 24px 60px -24px rgba(0,0,0,.6);
+}
+
+/* ============ Product UI tokens (fixed inside mockups) ============ */
+:root{
+  --p-primary:#275E54;
+  --p-primary-deep:#1C4741;
+  --p-primary-tint:#EAF2EF;
+  --p-ink:#22302C;
+  --p-ink-soft:#66756F;
+  --p-ground:#F4F6F3;
+  --p-surface:#FFFFFF;
+  --p-line:#E2E8E3;
+  --p-warm:#E8965A;
+  --p-warm-tint:#FBEFE3;
+  --p-good:#3E8E5A;  --p-good-tint:#E7F3EB;
+  --p-warn:#D98E2B;  --p-warn-tint:#FAF0DC;
+  --p-bad:#C4554D;   --p-bad-tint:#F9E9E7;
+  --p-info:#4A7FB5;  --p-info-tint:#E9F0F8;
+  /* tenant B (white-label demo) */
+  --t2-primary:#1F3A5F;
+  --t2-accent:#F0704A;
+  --t2-tint:#FDEEE8;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Segoe UI Variable Text","Segoe UI",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  line-height:1.55;
+  font-size:16px;
+}
+.serif{font-family:Charter,"Bitstream Charter",Cambria,Georgia,serif}
+
+/* ============ Page chrome ============ */
+.masthead{
+  max-width:1080px;margin:0 auto;padding:64px 24px 36px;
+}
+.eyebrow{
+  font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);font-weight:600;
+}
+.masthead h1{
+  font-family:Charter,"Bitstream Charter",Cambria,Georgia,serif;
+  font-size:clamp(30px,5vw,44px);line-height:1.12;font-weight:700;
+  margin:10px 0 14px;text-wrap:balance;
+}
+.masthead p.lede{max-width:62ch;color:var(--ink-soft);font-size:17px}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.meta-chip{
+  font-size:12.5px;padding:4px 12px;border:1px solid var(--line);
+  border-radius:999px;color:var(--ink-soft);background:var(--panel);
+}
+.meta-chip strong{color:var(--ink);font-weight:600}
+
+nav.toc{
+  position:sticky;top:0;z-index:50;background:var(--ground);
+  border-bottom:1px solid var(--line);
+}
+nav.toc .inner{
+  max-width:1080px;margin:0 auto;padding:10px 24px;
+  display:flex;gap:4px;overflow-x:auto;
+}
+nav.toc a{
+  color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:600;
+  padding:6px 12px;border-radius:8px;white-space:nowrap;
+}
+nav.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+nav.toc a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+section.shot{max-width:1080px;margin:0 auto;padding:56px 24px 8px}
+.shot-head{max-width:68ch;margin-bottom:24px}
+.shot-head .eyebrow{color:var(--ink-soft)}
+.shot-head h2{
+  font-family:Charter,"Bitstream Charter",Cambria,Georgia,serif;
+  font-size:clamp(22px,3.2vw,30px);margin:6px 0 8px;text-wrap:balance;
+}
+.shot-head p{color:var(--ink-soft);font-size:15.5px}
+.callouts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.callouts span{
+  font-size:12.5px;font-weight:600;color:var(--accent);
+  background:var(--accent-soft);border-radius:999px;padding:4px 12px;
+}
+
+/* ============ Frames ============ */
+.browser{
+  background:var(--p-surface);border-radius:12px;overflow:hidden;
+  box-shadow:var(--frame-shadow);border:1px solid var(--line);
+}
+.browser .bar{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#ECEFEA;border-bottom:1px solid #DDE2DC;
+}
+.browser .dots{display:flex;gap:6px}
+.browser .dots i{width:10px;height:10px;border-radius:50%;background:#C9CFC8;display:block}
+.browser .url{
+  flex:1;max-width:420px;background:#FFFFFF;border:1px solid #DDE2DC;
+  border-radius:7px;padding:3px 12px;font-size:12px;color:#7A857E;
+  font-family:Consolas,ui-monospace,monospace;
+}
+.frame-scroll{overflow-x:auto}
+.frame-scroll > .app{min-width:920px}
+
+/* ============ Product app shell ============ */
+.app{display:flex;background:var(--p-ground);color:var(--p-ink);
+  font-size:13px;line-height:1.45;text-align:left}
+.app *{font-family:"Segoe UI Variable Text","Segoe UI",-apple-system,"Helvetica Neue",Arial,sans-serif}
+.side{
+  width:186px;flex-shrink:0;background:var(--p-primary-deep);color:#DCE9E4;
+  display:flex;flex-direction:column;padding:16px 12px;gap:2px;
+}
+.logo{display:flex;align-items:center;gap:9px;padding:2px 8px 16px}
+.logo .mark{
+  width:28px;height:28px;border-radius:9px;background:var(--p-warm);
+  display:grid;place-items:center;font-weight:800;color:#3D2A16;font-size:14px;
+}
+.logo b{font-size:16px;letter-spacing:.01em;color:#FFF}
+.side a{
+  color:#B9CEC7;text-decoration:none;font-size:13px;font-weight:600;
+  padding:8px 10px;border-radius:8px;display:flex;gap:9px;align-items:center;
+}
+.side a.on{background:rgba(255,255,255,.13);color:#FFF}
+.side .ico{width:16px;height:16px;border-radius:4px;background:currentColor;opacity:.35;flex-shrink:0}
+.side .spacer{flex:1}
+.side .me{display:flex;gap:8px;align-items:center;padding:10px 8px 4px;border-top:1px solid rgba(255,255,255,.14);margin-top:10px}
+.me .av{width:26px;height:26px;border-radius:50%;background:#7FB0A3;color:#123;display:grid;place-items:center;font-size:11px;font-weight:700}
+.me small{font-size:11px;color:#9FB8B0;display:block;line-height:1.2}
+.me b{font-size:12px;color:#FFF}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:12px 20px;
+  background:var(--p-surface);border-bottom:1px solid var(--p-line);
+}
+.topbar h3{font-size:15px;font-weight:700}
+.topbar .date{color:var(--p-ink-soft);font-size:12.5px}
+.search{
+  margin-left:auto;background:var(--p-ground);border:1px solid var(--p-line);
+  border-radius:8px;padding:5px 12px;font-size:12px;color:var(--p-ink-soft);min-width:200px;
+}
+.btn{
+  background:var(--p-primary);color:#FFF;border-radius:8px;padding:6px 14px;
+  font-size:12.5px;font-weight:700;white-space:nowrap;
+}
+.btn.ghost{background:var(--p-primary-tint);color:var(--p-primary)}
+.btn.warm{background:var(--p-warm);color:#3D2A16}
+.content{padding:18px 20px;display:flex;flex-direction:column;gap:16px}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tile{background:var(--p-surface);border:1px solid var(--p-line);border-radius:12px;padding:13px 15px}
+.tile .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--p-ink-soft);font-weight:700}
+.tile .num{font-size:24px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+.tile .sub{font-size:11.5px;color:var(--p-ink-soft);margin-top:2px}
+.tile .sub b.up{color:var(--p-good)}
+.tile .sub b.dn{color:var(--p-bad)}
+.meter{height:5px;background:var(--p-line);border-radius:99px;margin-top:9px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:99px;background:var(--p-primary)}
+
+.cols{display:grid;grid-template-columns:1.55fr 1fr;gap:14px;align-items:start}
+.card{background:var(--p-surface);border:1px solid var(--p-line);border-radius:12px;overflow:hidden}
+.card .hd{display:flex;align-items:center;gap:8px;padding:11px 15px;border-bottom:1px solid var(--p-line)}
+.card .hd b{font-size:13px}
+.card .hd .cnt{font-size:11px;background:var(--p-primary-tint);color:var(--p-primary);font-weight:700;border-radius:99px;padding:1px 8px}
+.card .hd a{margin-left:auto;font-size:12px;color:var(--p-primary);font-weight:700;text-decoration:none}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{
+  text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--p-ink-soft);padding:8px 15px;border-bottom:1px solid var(--p-line);font-weight:700;
+}
+.tbl td{padding:9px 15px;border-bottom:1px solid var(--p-line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.petcell{display:flex;align-items:center;gap:9px}
+.pav{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;color:#FFF;flex-shrink:0}
+.petcell small{display:block;color:var(--p-ink-soft);font-size:11px;line-height:1.25}
+.pill{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.pill.good{background:var(--p-good-tint);color:var(--p-good)}
+.pill.warn{background:var(--p-warn-tint);color:#9A6414}
+.pill.bad{background:var(--p-bad-tint);color:var(--p-bad)}
+.pill.info{background:var(--p-info-tint);color:var(--p-info)}
+.pill.prim{background:var(--p-primary-tint);color:var(--p-primary)}
+.pill.warm{background:var(--p-warm-tint);color:#A85A1E}
+
+.alist{list-style:none}
+.alist li{display:flex;gap:10px;padding:10px 15px;border-bottom:1px solid var(--p-line);font-size:12.5px;align-items:flex-start}
+.alist li:last-child{border-bottom:none}
+.dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.dot.warn{background:var(--p-warn)} .dot.bad{background:var(--p-bad)} .dot.info{background:var(--p-info)}
+.alist small{color:var(--p-ink-soft);display:block;font-size:11.5px}
+
+/* occupancy bars */
+.week{display:flex;gap:8px;padding:14px 15px;align-items:flex-end;height:120px}
+.week .day{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:5px;text-align:center;height:100%}
+.week .bar-b{background:var(--p-primary);border-radius:5px 5px 0 0}
+.week .bar-d{background:#9CC3B8;border-radius:0}
+.week .stack{display:flex;flex-direction:column;justify-content:flex-end;flex:1;border-radius:5px;overflow:hidden}
+.week small{font-size:10.5px;color:var(--p-ink-soft);font-weight:600}
+.week .day.today small{color:var(--p-primary)}
+.legend{display:flex;gap:14px;padding:0 15px 13px;font-size:11px;color:var(--p-ink-soft)}
+.legend i{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+
+/* ============ Facility board ============ */
+.board-wrap{padding:18px 20px;display:flex;gap:14px;align-items:flex-start}
+.board{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}
+.zone h4{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--p-ink-soft);margin-bottom:8px;font-weight:700}
+.runs{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.run{
+  border-radius:10px;padding:8px 10px;border:1px solid var(--p-line);
+  background:var(--p-surface);min-height:64px;position:relative;
+}
+.run .id{font-size:10px;font-weight:800;color:var(--p-ink-soft);letter-spacing:.05em}
+.run b{display:block;font-size:12.5px;margin-top:2px}
+.run small{display:block;font-size:10.5px;color:var(--p-ink-soft);line-height:1.3}
+.run.occ{border-left:4px solid var(--p-primary)}
+.run.arr{border-left:4px solid var(--p-info);background:var(--p-info-tint)}
+.run.dep{border-left:4px solid var(--p-warm);background:var(--p-warm-tint)}
+.run.cln{border-left:4px solid var(--p-warn);background:var(--p-warn-tint)}
+.run.open{border-style:dashed;background:transparent}
+.run.open b{color:var(--p-ink-soft);font-weight:600;font-size:11.5px}
+.flag{position:absolute;top:7px;right:8px;font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 7px}
+.flag.med{background:var(--p-bad-tint);color:var(--p-bad)}
+.flag.new{background:var(--p-info-tint);color:var(--p-info)}
+.board-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--p-ink-soft);padding:2px 0 0}
+.board-legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+
+.panel{width:250px;flex-shrink:0}
+.check{list-style:none}
+.check li{display:flex;gap:9px;padding:9px 15px;border-bottom:1px solid var(--p-line);font-size:12px;align-items:flex-start}
+.check li:last-child{border-bottom:none}
+.box{width:15px;height:15px;border-radius:5px;border:1.5px solid #B8C4BC;flex-shrink:0;margin-top:1px}
+.box.done{background:var(--p-good);border-color:var(--p-good);position:relative}
+.box.done::after{content:"";position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #FFF;border-width:0 2px 2px 0;transform:rotate(42deg)}
+.check small{display:block;color:var(--p-ink-soft);font-size:10.5px}
+.check .strike{text-decoration:line-through;color:var(--p-ink-soft)}
+
+/* ============ Calendar ============ */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--p-line)}
+.cal .col{border-right:1px solid var(--p-line);min-height:250px;padding:7px;display:flex;flex-direction:column;gap:6px}
+.cal .col:last-child{border-right:none}
+.cal .dh{text-align:center;font-size:11px;font-weight:700;color:var(--p-ink-soft);padding-bottom:5px}
+.cal .dh b{display:block;font-size:15px;color:var(--p-ink)}
+.cal .col.today{background:var(--p-primary-tint)}
+.cal .col.today .dh b{color:var(--p-primary)}
+.evt{border-radius:7px;padding:5px 8px;font-size:10.5px;font-weight:700;line-height:1.3;border-left:3px solid}
+.evt small{display:block;font-weight:600;opacity:.75;font-size:9.5px}
+.evt.b{background:var(--p-primary-tint);border-color:var(--p-primary);color:var(--p-primary-deep)}
+.evt.d{background:#EDF4F1;border-color:#9CC3B8;color:#3E6459}
+.evt.hold{background:var(--p-warn-tint);border-color:var(--p-warn);color:#8A5A12;border-left-style:dashed}
+.capline{margin-top:auto;font-size:10px;color:var(--p-ink-soft);font-weight:600}
+.capline .meter{margin-top:4px}
+.capline .meter i.hot{background:var(--p-warn)}
+
+/* ============ Pet profile ============ */
+.pethead{display:flex;gap:16px;padding:18px 20px;background:var(--p-surface);border-bottom:1px solid var(--p-line);align-items:center}
+.bigav{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font-size:24px;font-weight:800;color:#FFF;background:#C98A4B;flex-shrink:0}
+.pethead h4{font-size:19px;font-weight:800}
+.pethead .sub{color:var(--p-ink-soft);font-size:12.5px;margin-top:1px}
+.tagrow{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.pethead .actions{margin-left:auto;display:flex;gap:8px}
+.tabs{display:flex;gap:2px;padding:0 20px;background:var(--p-surface);border-bottom:1px solid var(--p-line)}
+.tabs span{padding:9px 13px;font-size:12.5px;font-weight:700;color:var(--p-ink-soft);border-bottom:2px solid transparent}
+.tabs span.on{color:var(--p-primary);border-color:var(--p-primary)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.kv{display:grid;grid-template-columns:120px 1fr;font-size:12.5px;row-gap:0}
+.kv dt{color:var(--p-ink-soft);padding:8px 15px;border-bottom:1px solid var(--p-line)}
+.kv dd{padding:8px 15px 8px 0;border-bottom:1px solid var(--p-line);font-weight:600}
+.kv dt:last-of-type,.kv dd:last-of-type{border-bottom:none}
+.note{padding:11px 15px;font-size:12.5px;border-bottom:1px solid var(--p-line)}
+.note:last-child{border-bottom:none}
+.note small{color:var(--p-ink-soft);font-size:11px;display:block;margin-top:2px}
+.note .who{font-weight:700}
+
+/* ============ Phones ============ */
+.phones{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+.phone-unit{display:flex;flex-direction:column;gap:12px;align-items:center}
+.phone-cap{font-size:13px;color:var(--ink-soft);max-width:290px;text-align:center}
+.phone-cap b{color:var(--ink)}
+.phone{
+  width:296px;border-radius:36px;background:#20242А;
+  background:#1F2326;padding:10px;box-shadow:var(--frame-shadow);
+}
+.screen{border-radius:27px;overflow:hidden;background:var(--p-ground);color:var(--p-ink);font-size:12.5px;line-height:1.45;text-align:left}
+.screen *{font-family:"Segoe UI Variable Text","Segoe UI",-apple-system,"Helvetica Neue",Arial,sans-serif}
+.statusb{display:flex;justify-content:space-between;padding:9px 18px 4px;font-size:10.5px;font-weight:700;color:var(--p-ink)}
+.appbar{display:flex;align-items:center;gap:9px;padding:8px 16px 10px}
+.appbar .mk{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:12px}
+.appbar b{font-size:14px}
+.appbar .bell{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--p-bad)}
+.pbody{padding:4px 14px 16px;display:flex;flex-direction:column;gap:11px}
+.pcard{background:var(--p-surface);border:1px solid var(--p-line);border-radius:14px;padding:12px 13px}
+.pcard .lbl{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--p-ink-soft);font-weight:800}
+.hero-stay{background:var(--p-primary);color:#EAF2EF;border:none}
+.hero-stay .lbl{color:#A9C8BF}
+.hero-stay h5{font-size:15px;color:#FFF;margin:3px 0 1px}
+.hero-stay small{font-size:11px;color:#BED6CE}
+.hero-stay .row{display:flex;gap:8px;margin-top:11px}
+.hero-stay .chipbtn{background:rgba(255,255,255,.16);color:#FFF;border-radius:8px;padding:6px 0;flex:1;text-align:center;font-size:11.5px;font-weight:700}
+.actgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.act{background:var(--p-surface);border:1px solid var(--p-line);border-radius:13px;padding:11px 12px;font-weight:700;font-size:12px}
+.act small{display:block;font-weight:600;color:var(--p-ink-soft);font-size:10.5px;margin-top:1px}
+.act .glyph{width:26px;height:26px;border-radius:8px;margin-bottom:7px;display:grid;place-items:center;font-size:13px}
+.credit{display:flex;align-items:center;gap:10px}
+.credit .num{font-size:21px;font-weight:800;color:var(--p-primary);font-variant-numeric:tabular-nums}
+.credit small{color:var(--p-ink-soft);font-size:11px}
+.tabbar{display:flex;border-top:1px solid var(--p-line);background:var(--p-surface);padding:7px 6px 12px}
+.tabbar span{flex:1;text-align:center;font-size:9.5px;font-weight:700;color:var(--p-ink-soft)}
+.tabbar span.on{color:var(--p-primary)}
+.tabbar .tico{width:20px;height:20px;border-radius:6px;background:currentColor;opacity:.28;margin:0 auto 3px}
+.photo{border-radius:11px;height:110px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#C9A876 0%,#8FA98E 55%,#57705F 100%)}
+.photo.two{background:linear-gradient(120deg,#A8BBA0 0%,#D9B98C 60%,#B0793F 100%)}
+.photo .tagph{position:absolute;left:9px;bottom:8px;background:rgba(20,28,24,.62);color:#FFF;font-size:9.5px;font-weight:700;padding:2px 9px;border-radius:99px}
+.rc-row{display:flex;gap:9px}
+.rc-row .photo{flex:1;height:86px}
+.feedln{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid var(--p-line);font-size:11.5px;align-items:flex-start}
+.feedln:last-child{border-bottom:none}
+.feedln .t{font-variant-numeric:tabular-nums;color:var(--p-ink-soft);font-weight:700;font-size:10.5px;width:52px;flex-shrink:0;padding-top:1px}
+.feedln small{color:var(--p-ink-soft);display:block;font-size:10.5px}
+.payline{display:flex;justify-content:space-between;padding:7px 0;font-size:12px;border-bottom:1px solid var(--p-line)}
+.payline:last-of-type{border-bottom:none}
+.payline b{font-variant-numeric:tabular-nums}
+.payline.total{font-size:13.5px;font-weight:800}
+.tips{display:flex;gap:7px;margin-top:9px}
+.tip{flex:1;text-align:center;border:1.5px solid var(--p-line);border-radius:9px;padding:7px 0;font-weight:700;font-size:12px}
+.tip small{display:block;font-weight:600;color:var(--p-ink-soft);font-size:9.5px}
+.tip.on{border-color:var(--p-primary);background:var(--p-primary-tint);color:var(--p-primary)}
+.paybtn{background:var(--p-primary);color:#FFF;text-align:center;border-radius:11px;padding:11px 0;font-weight:800;font-size:13px;margin-top:10px}
+.cardrow{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--p-ink-soft);margin-top:9px;justify-content:center}
+.cardrow .cc{width:26px;height:17px;border-radius:4px;background:linear-gradient(120deg,#4A7FB5,#274E78)}
+
+/* white-label tenant B overrides */
+.screen.t2 .appbar .mk{background:var(--t2-accent);color:#FFF}
+.screen.t2 .hero-stay{background:var(--t2-primary)}
+.screen.t2 .hero-stay .lbl{color:#9FB2CC}
+.screen.t2 .hero-stay small{color:#B9C7DC}
+.screen.t2 .credit .num{color:var(--t2-primary)}
+.screen.t2 .tabbar span.on{color:var(--t2-accent)}
+.screen.t2 .act .glyph{background:var(--t2-tint);color:var(--t2-accent)}
+.screen.t2 .paybtn{background:var(--t2-accent)}
+
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:26px;justify-items:center}
+@media (max-width:760px){
+  .duo{grid-template-columns:1fr}
+  .tiles{grid-template-columns:repeat(2,1fr)}
+}
+
+footer{max-width:1080px;margin:0 auto;padding:48px 24px 72px;color:var(--ink-soft);font-size:14px}
+footer .rule{border-top:1px solid var(--line);padding-top:22px;max-width:62ch}
+footer b{color:var(--ink)}
+</style>
+
+<header class="masthead">
+  <div class="eyebrow">PetCare Platform · Phase 1 Product Mockups</div>
+  <h1>Boarding &amp; daycare, from the front desk to the client's phone</h1>
+  <p class="lede">Six core surfaces of the MVP, mocked at high fidelity with real content. Working product name is <strong>Denly</strong> (placeholder — swap freely); the demo tenant is <strong>Cedar Creek Pet Lodge</strong>, a 56-run boarding and daycare facility. The last section shows the same client app re-skinned by the per-tenant theme config to prove out white-labeling.</p>
+  <div class="meta-row">
+    <span class="meta-chip"><strong>Scope</strong> · Phase 1 MVP (boarding/daycare)</span>
+    <span class="meta-chip"><strong>Staff UI</strong> · responsive web, desktop-first frames shown</span>
+    <span class="meta-chip"><strong>Client UI</strong> · installable PWA, phone frames shown</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Mockup sections">
+  <div class="inner">
+    <a href="#dashboard">1 · Dashboard</a>
+    <a href="#board">2 · Facility board</a>
+    <a href="#calendar">3 · Calendar</a>
+    <a href="#pet">4 · Pet profile</a>
+    <a href="#client">5 · Client app</a>
+    <a href="#whitelabel">6 · White-label</a>
+  </div>
+</nav>
+
+<!-- ============ 1. DASHBOARD ============ -->
+<section class="shot" id="dashboard">
+  <div class="shot-head">
+    <div class="eyebrow">01 · Staff — Owner &amp; manager</div>
+    <h2>Today dashboard</h2>
+    <p>The morning answer to "what does today look like": occupancy against capacity, who's arriving and leaving, money in, and the exceptions that need a human — expiring vaccines, unsigned waivers, failed cards.</p>
+    <div class="callouts">
+      <span>Forward + backward looking</span><span>Exception-driven alerts</span><span>Sub-second load target</span>
+    </div>
+  </div>
+  <div class="browser">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">app.denly.com/cedar-creek/dashboard</div></div>
+    <div class="frame-scroll"><div class="app">
+      <aside class="side">
+        <div class="logo"><span class="mark">D</span><b>Denly</b></div>
+        <a class="on" href="#dashboard"><span class="ico"></span>Dashboard</a>
+        <a href="#board"><span class="ico"></span>Facility board</a>
+        <a href="#calendar"><span class="ico"></span>Calendar</a>
+        <a href="#pet"><span class="ico"></span>Clients &amp; pets</a>
+        <a href="#dashboard"><span class="ico"></span>Point of sale</a>
+        <a href="#dashboard"><span class="ico"></span>Messages</a>
+        <a href="#dashboard"><span class="ico"></span>Reports</a>
+        <a href="#dashboard"><span class="ico"></span>Settings</a>
+        <div class="spacer"></div>
+        <div class="me"><span class="av">RK</span><span><b>Rosa Kim</b><small>Owner · Cedar Creek</small></span></div>
+      </aside>
+      <div class="main">
+        <div class="topbar">
+          <h3>Good morning, Rosa</h3><span class="date">Friday, Aug 7</span>
+          <span class="search">Search pets, clients, bookings…</span>
+          <span class="btn">+ New booking</span>
+        </div>
+        <div class="content">
+          <div class="tiles">
+            <div class="tile"><div class="lbl">Occupancy</div><div class="num">42 / 56</div>
+              <div class="sub">75% · 8 daycare-only</div><div class="meter"><i style="width:75%"></i></div></div>
+            <div class="tile"><div class="lbl">Arrivals today</div><div class="num">11</div>
+              <div class="sub">6 boarding · 5 daycare</div></div>
+            <div class="tile"><div class="lbl">Departures today</div><div class="num">9</div>
+              <div class="sub">3 before noon</div></div>
+            <div class="tile"><div class="lbl">Revenue today</div><div class="num">$2,348</div>
+              <div class="sub"><b class="up">▲ 12%</b> vs. last Friday</div></div>
+          </div>
+          <div class="cols">
+            <div class="card">
+              <div class="hd"><b>Arrivals</b><span class="cnt">11</span><a href="#board">Open board</a></div>
+              <table class="tbl">
+                <tr><th>Pet</th><th>Service</th><th>Run</th><th>ETA</th><th>Status</th></tr>
+                <tr>
+                  <td><div class="petcell"><span class="pav" style="background:#C98A4B">B</span><span><b>Biscuit</b><small>Golden Retriever · M. Alvarez</small></span></div></td>
+                  <td>Boarding · 4 nights</td><td>Suite A3</td><td>8:30a</td>
+                  <td><span class="pill good">Checked in</span></td>
+                </tr>
+                <tr>
+                  <td><div class="petcell"><span class="pav" style="background:#6B7FA8">L</span><span><b>Luna</b><small>Border Collie · T. Nguyen</small></span></div></td>
+                  <td>Daycare · full day</td><td>Group 2</td><td>9:00a</td>
+                  <td><span class="pill info">Arriving</span></td>
+                </tr>
+                <tr>
+                  <td><div class="petcell"><span class="pav" style="background:#8A6BA8">M</span><span><b>Moose</b><small>Bernese Mtn Dog · D. Okafor</small></span></div></td>
+                  <td>Boarding · 2 nights</td><td>Run B7</td><td>10:15a</td>
+                  <td><span class="pill warn">Vaccine due</span></td>
+                </tr>
+                <tr>
+                  <td><div class="petcell"><span class="pav" style="background:#4E937E">P</span><span><b>Pepper</b><small>Mini Schnauzer · S. Whitfield</small></span></div></td>
+                  <td>Daycare · half day</td><td>Group 1</td><td>11:00a</td>
+                  <td><span class="pill bad">Waiver unsigned</span></td>
+                </tr>
+              </table>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div class="card">
+                <div class="hd"><b>Needs attention</b><span class="cnt">5</span></div>
+                <ul class="alist">
+                  <li><span class="dot warn"></span><span><b>3 vaccines expire this week</b><small>Moose (Bordetella), Ziggy (DHPP), Clementine (Rabies)</small></span></li>
+                  <li><span class="dot bad"></span><span><b>Card declined — invoice #1841</b><small>S. Whitfield · $128.00 · retrying tomorrow</small></span></li>
+                  <li><span class="dot info"></span><span><b>2 booking requests to review</b><small>New clients · auto-accept off for first visits</small></span></li>
+                </ul>
+              </div>
+              <div class="card">
+                <div class="hd"><b>Occupancy · next 7 days</b></div>
+                <div class="week" role="img" aria-label="Occupancy bar chart, next seven days, peaking Saturday at 54 of 56">
+                  <div class="day today"><div class="stack" style="height:75%"><div class="bar-d" style="height:26%"></div><div class="bar-b" style="height:74%"></div></div><small>F</small></div>
+                  <div class="day"><div class="stack" style="height:96%"><div class="bar-d" style="height:12%"></div><div class="bar-b" style="height:88%"></div></div><small>S</small></div>
+                  <div class="day"><div class="stack" style="height:88%"><div class="bar-d" style="height:10%"></div><div class="bar-b" style="height:90%"></div></div><small>S</small></div>
+                  <div class="day"><div class="stack" style="height:60%"><div class="bar-d" style="height:38%"></div><div class="bar-b" style="height:62%"></div></div><small>M</small></div>
+                  <div class="day"><div class="stack" style="height:55%"><div class="bar-d" style="height:42%"></div><div class="bar-b" style="height:58%"></div></div><small>T</small></div>
+                  <div class="day"><div class="stack" style="height:64%"><div class="bar-d" style="height:36%"></div><div class="bar-b" style="height:64%"></div></div><small>W</small></div>
+                  <div class="day"><div class="stack" style="height:70%"><div class="bar-d" style="height:30%"></div><div class="bar-b" style="height:70%"></div></div><small>T</small></div>
+                </div>
+                <div class="legend"><span><i style="background:var(--p-primary)"></i>Boarding</span><span><i style="background:#9CC3B8"></i>Daycare</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ 2. FACILITY BOARD ============ -->
+<section class="shot" id="board">
+  <div class="shot-head">
+    <div class="eyebrow">02 · Staff — Front desk &amp; kennel techs</div>
+    <h2>Facility board — live occupancy &amp; check-in</h2>
+    <p>The operational heart of the product: every run and play group as a card, color-striped by state. Tapping an arriving pet opens the express check-in panel — belongings, feeding, meds — designed to work offline-tolerant on a front-desk tablet.</p>
+    <div class="callouts">
+      <span>Drag-and-drop run assignment</span><span>Med flags surfaced on the cell</span><span>Offline-tolerant check-in</span>
+    </div>
+  </div>
+  <div class="browser">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">app.denly.com/cedar-creek/board</div></div>
+    <div class="frame-scroll"><div class="app">
+      <aside class="side">
+        <div class="logo"><span class="mark">D</span><b>Denly</b></div>
+        <a href="#dashboard"><span class="ico"></span>Dashboard</a>
+        <a class="on" href="#board"><span class="ico"></span>Facility board</a>
+        <a href="#calendar"><span class="ico"></span>Calendar</a>
+        <a href="#pet"><span class="ico"></span>Clients &amp; pets</a>
+        <a href="#dashboard"><span class="ico"></span>Point of sale</a>
+        <a href="#dashboard"><span class="ico"></span>Messages</a>
+        <a href="#dashboard"><span class="ico"></span>Reports</a>
+        <a href="#dashboard"><span class="ico"></span>Settings</a>
+        <div class="spacer"></div>
+        <div class="me"><span class="av">JP</span><span><b>Jordan Price</b><small>Front desk</small></span></div>
+      </aside>
+      <div class="main">
+        <div class="topbar">
+          <h3>Facility board</h3><span class="date">Fri Aug 7 · 8:42 AM</span>
+          <span class="search">Find a pet on the board…</span>
+          <span class="btn ghost">Print run cards</span>
+        </div>
+        <div class="board-wrap">
+          <div class="board">
+            <div class="zone">
+              <h4>Suites · A wing (8)</h4>
+              <div class="runs">
+                <div class="run arr"><span class="id">A1</span><b>Clementine</b><small>Corgi · in 8:15a</small><span class="flag new">NEW</span></div>
+                <div class="run occ"><span class="id">A2</span><b>Ziggy</b><small>Poodle mix · night 3/6</small></div>
+                <div class="run occ"><span class="id">A3</span><b>Biscuit</b><small>Golden · night 1/4</small><span class="flag med">MED</span></div>
+                <div class="run dep"><span class="id">A4</span><b>Waffles</b><small>Frenchie · out 11a</small></div>
+                <div class="run occ"><span class="id">A5</span><b>Juniper</b><small>Aussie · night 2/2</small></div>
+                <div class="run cln"><span class="id">A6</span><b>Cleaning</b><small>ready ~9:30a</small></div>
+                <div class="run open"><span class="id">A7</span><b>Open suite</b></div>
+                <div class="run occ"><span class="id">A8</span><b>Tater</b><small>Beagle · night 5/7</small><span class="flag med">MED</span></div>
+              </div>
+            </div>
+            <div class="zone">
+              <h4>Standard runs · B wing (12 of 24 shown)</h4>
+              <div class="runs">
+                <div class="run occ"><span class="id">B1</span><b>Nori</b><small>Shiba · night 1/2</small></div>
+                <div class="run occ"><span class="id">B2</span><b>Banjo</b><small>Lab mix · night 4/5</small></div>
+                <div class="run arr"><span class="id">B3</span><b>Olive</b><small>Dachshund · in 12p</small></div>
+                <div class="run occ"><span class="id">B4</span><b>Scout</b><small>Heeler · night 2/3</small></div>
+                <div class="run dep"><span class="id">B5</span><b>Mabel</b><small>Pug · out 9a ✓paid</small></div>
+                <div class="run occ"><span class="id">B6</span><b>Gus</b><small>Boxer · night 1/1</small></div>
+                <div class="run arr"><span class="id">B7</span><b>Moose</b><small>Bernese · in 10:15a</small><span class="flag med">MED</span></div>
+                <div class="run open"><span class="id">B8</span><b>Open run</b></div>
+                <div class="run occ"><span class="id">B9</span><b>Frida</b><small>GSD · night 6/10</small></div>
+                <div class="run cln"><span class="id">B10</span><b>Cleaning</b><small>deep clean</small></div>
+                <div class="run open"><span class="id">B11</span><b>Open run</b></div>
+                <div class="run occ"><span class="id">B12</span><b>Peanut</b><small>Chi mix · night 2/4</small></div>
+              </div>
+            </div>
+            <div class="zone">
+              <h4>Daycare play groups</h4>
+              <div class="runs">
+                <div class="run occ"><span class="id">GROUP 1 · SMALL</span><b>9 / 12 dogs</b><small>Pepper, Olive, Peanut +6</small></div>
+                <div class="run occ"><span class="id">GROUP 2 · LARGE</span><b>11 / 14 dogs</b><small>Luna, Scout, Banjo +8</small></div>
+                <div class="run open"><span class="id">GROUP 3 · GENTLE</span><b>4 / 8 dogs</b><small>seniors &amp; shy dogs</small></div>
+              </div>
+            </div>
+            <div class="board-legend">
+              <span><i style="background:var(--p-primary)"></i>Occupied</span>
+              <span><i style="background:var(--p-info)"></i>Arriving today</span>
+              <span><i style="background:var(--p-warm)"></i>Departing today</span>
+              <span><i style="background:var(--p-warn)"></i>Cleaning</span>
+              <span><i style="border:1.5px dashed #B8C4BC;background:transparent"></i>Open</span>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="card">
+              <div class="hd"><b>Check in · Biscuit</b><span class="pill prim">Suite A3</span></div>
+              <ul class="check">
+                <li><span class="box done"></span><span class="strike">Waiver current (v3, signed May 12)</span></li>
+                <li><span class="box done"></span><span class="strike">Vaccines verified · all current</span></li>
+                <li><span class="box done"></span><span><span class="strike">Belongings logged</span><small>1 leash · 1 bed · salmon kibble, 8 cups</small></span></li>
+                <li><span class="box"></span><span>Feeding plan confirmed<small>2 cups AM / 2 cups PM · slow bowl</small></span></li>
+                <li><span class="box"></span><span>Medication logged<small>Carprofen 75mg with PM meal</small></span></li>
+                <li><span class="box"></span><span>Owner signature at drop-off</span></li>
+              </ul>
+              <div style="padding:11px 15px"><span class="btn" style="display:block;text-align:center">Complete check-in</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ 3. CALENDAR ============ -->
+<section class="shot" id="calendar">
+  <div class="shot-head">
+    <div class="eyebrow">03 · Staff — Scheduling</div>
+    <h2>Unified boarding + daycare calendar</h2>
+    <p>Boarding stays render as multi-day spans, daycare as day chips, both against a per-day capacity meter. Pending online requests appear as dashed holds until approved — capacity math includes them so the desk never oversells a weekend. The event model is service-type-generic so grooming and training drop in at Phase 2 without rework.</p>
+    <div class="callouts">
+      <span>Capacity &amp; conflict detection</span><span>Recurring daycare (every Tue/Thu)</span><span>Drag-to-reschedule</span>
+    </div>
+  </div>
+  <div class="browser">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">app.denly.com/cedar-creek/calendar?view=week</div></div>
+    <div class="frame-scroll"><div class="app">
+      <aside class="side">
+        <div class="logo"><span class="mark">D</span><b>Denly</b></div>
+        <a href="#dashboard"><span class="ico"></span>Dashboard</a>
+        <a href="#board"><span class="ico"></span>Facility board</a>
+        <a class="on" href="#calendar"><span class="ico"></span>Calendar</a>
+        <a href="#pet"><span class="ico"></span>Clients &amp; pets</a>
+        <a href="#dashboard"><span class="ico"></span>Point of sale</a>
+        <a href="#dashboard"><span class="ico"></span>Messages</a>
+        <a href="#dashboard"><span class="ico"></span>Reports</a>
+        <a href="#dashboard"><span class="ico"></span>Settings</a>
+        <div class="spacer"></div>
+        <div class="me"><span class="av">RK</span><span><b>Rosa Kim</b><small>Owner · Cedar Creek</small></span></div>
+      </aside>
+      <div class="main">
+        <div class="topbar">
+          <h3>Week of Aug 3 – 9</h3>
+          <span class="pill prim">Boarding</span><span class="pill" style="background:#EDF4F1;color:#3E6459">Daycare</span>
+          <span class="search">Jump to date…</span>
+          <span class="btn">+ New booking</span>
+        </div>
+        <div class="content" style="padding-bottom:0">
+          <div class="card" style="border-radius:12px 12px 0 0;border-bottom:none">
+            <div class="cal">
+              <div class="col"><div class="dh">MON<b>3</b></div>
+                <div class="evt b">Frida · GSD<small>Boarding · day 2 of 10</small></div>
+                <div class="evt d">Daycare · 14 dogs<small>2 groups</small></div>
+                <div class="capline">31 / 56 booked<div class="meter"><i style="width:55%"></i></div></div>
+              </div>
+              <div class="col"><div class="dh">TUE<b>4</b></div>
+                <div class="evt b">Tater · Beagle<small>Boarding · day 2 of 7</small></div>
+                <div class="evt d">Luna · recurring<small>every Tue/Thu</small></div>
+                <div class="evt d">Daycare · 17 dogs<small>3 groups</small></div>
+                <div class="capline">34 / 56 booked<div class="meter"><i style="width:61%"></i></div></div>
+              </div>
+              <div class="col"><div class="dh">WED<b>5</b></div>
+                <div class="evt b">Ziggy · Poodle mix<small>Boarding · day 1 of 6</small></div>
+                <div class="evt d">Daycare · 15 dogs<small>2 groups</small></div>
+                <div class="capline">36 / 56 booked<div class="meter"><i style="width:64%"></i></div></div>
+              </div>
+              <div class="col"><div class="dh">THU<b>6</b></div>
+                <div class="evt b">Peanut · Chi mix<small>Boarding · day 1 of 4</small></div>
+                <div class="evt d">Luna · recurring<small>every Tue/Thu</small></div>
+                <div class="capline">38 / 56 booked<div class="meter"><i style="width:68%"></i></div></div>
+              </div>
+              <div class="col today"><div class="dh">FRI<b>7</b></div>
+                <div class="evt b">Biscuit · Golden<small>Boarding · in today, 4 nts</small></div>
+                <div class="evt b">Moose · Bernese<small>Boarding · in today, 2 nts</small></div>
+                <div class="evt hold">Request · Hazel<small>new client · review</small></div>
+                <div class="capline">42 / 56 booked<div class="meter"><i style="width:75%"></i></div></div>
+              </div>
+              <div class="col"><div class="dh">SAT<b>8</b></div>
+                <div class="evt b">Weekend peak<small>29 boarding stays</small></div>
+                <div class="evt hold">Request · Bruno<small>waitlist if full</small></div>
+                <div class="capline">54 / 56 booked<div class="meter"><i class="hot" style="width:96%"></i></div></div>
+              </div>
+              <div class="col"><div class="dh">SUN<b>9</b></div>
+                <div class="evt b">Weekend peak<small>27 boarding stays</small></div>
+                <div class="evt b">6 departures<small>by noon</small></div>
+                <div class="capline">49 / 56 booked<div class="meter"><i style="width:88%"></i></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ 4. PET PROFILE ============ -->
+<section class="shot" id="pet">
+  <div class="shot-head">
+    <div class="eyebrow">04 · Staff — Clients &amp; pets</div>
+    <h2>Pet profile — the single source of truth</h2>
+    <p>Everything the desk and kennel techs need on one record: vaccine status with expiration tracking, feeding and medication instructions that flow straight onto the facility board, staff-only vs. client-visible notes, and the household link to siblings and the owner's account balance.</p>
+    <div class="callouts">
+      <span>Vaccine auto-reminders</span><span>Staff-only note visibility</span><span>Household grouping</span>
+    </div>
+  </div>
+  <div class="browser">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">app.denly.com/cedar-creek/pets/biscuit-alvarez</div></div>
+    <div class="frame-scroll"><div class="app">
+      <aside class="side">
+        <div class="logo"><span class="mark">D</span><b>Denly</b></div>
+        <a href="#dashboard"><span class="ico"></span>Dashboard</a>
+        <a href="#board"><span class="ico"></span>Facility board</a>
+        <a href="#calendar"><span class="ico"></span>Calendar</a>
+        <a class="on" href="#pet"><span class="ico"></span>Clients &amp; pets</a>
+        <a href="#dashboard"><span class="ico"></span>Point of sale</a>
+        <a href="#dashboard"><span class="ico"></span>Messages</a>
+        <a href="#dashboard"><span class="ico"></span>Reports</a>
+        <a href="#dashboard"><span class="ico"></span>Settings</a>
+        <div class="spacer"></div>
+        <div class="me"><span class="av">JP</span><span><b>Jordan Price</b><small>Front desk</small></span></div>
+      </aside>
+      <div class="main">
+        <div class="pethead">
+          <span class="bigav">B</span>
+          <div>
+            <h4>Biscuit</h4>
+            <div class="sub">Golden Retriever · M · 4 yrs · 68 lb · Household: Alvarez (with Churro, cat)</div>
+            <div class="tagrow">
+              <span class="pill good">Vaccines current</span>
+              <span class="pill warm">Daily meds</span>
+              <span class="pill info">Slow eater</span>
+              <span class="pill prim">Waiver v3 signed</span>
+            </div>
+          </div>
+          <div class="actions"><span class="btn ghost">Message owner</span><span class="btn">Book stay</span></div>
+        </div>
+        <div class="tabs">
+          <span class="on">Overview</span><span>Vaccines</span><span>Feeding &amp; meds</span><span>History</span><span>Documents</span><span>Billing</span>
+        </div>
+        <div class="content">
+          <div class="grid2">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div class="card">
+                <div class="hd"><b>Vaccine records</b><a href="#pet">Upload record</a></div>
+                <table class="tbl">
+                  <tr><th>Vaccine</th><th>Expires</th><th>Status</th></tr>
+                  <tr><td>Rabies (3-yr)</td><td>Mar 2028</td><td><span class="pill good">Current</span></td></tr>
+                  <tr><td>DHPP</td><td>Jan 2027</td><td><span class="pill good">Current</span></td></tr>
+                  <tr><td>Bordetella</td><td>Sep 14, 2026</td><td><span class="pill warn">38 days · reminder queued</span></td></tr>
+                  <tr><td>Canine influenza</td><td>Nov 2026</td><td><span class="pill good">Current</span></td></tr>
+                </table>
+              </div>
+              <div class="card">
+                <div class="hd"><b>Feeding &amp; medication</b><a href="#pet">Edit plan</a></div>
+                <dl class="kv">
+                  <dt>Food</dt><dd>Owner-provided salmon kibble · 2 cups AM / 2 cups PM</dd>
+                  <dt>Bowl</dt><dd>Slow-feed bowl (gulps otherwise)</dd>
+                  <dt>Medication</dt><dd>Carprofen 75 mg · 1 tab with PM meal</dd>
+                  <dt>Allergies</dt><dd>Chicken — no facility treats</dd>
+                  <dt>Vet</dt><dd>Riverbend Animal Hospital · (555) 014-2287</dd>
+                </dl>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div class="card">
+                <div class="hd"><b>Behavior &amp; care notes</b></div>
+                <div class="note"><span class="who">Priya S.</span> — Settles fast if he can see other dogs; corner suites work best. Loves the wading pool.
+                  <small>Jul 22 · <b style="color:var(--p-good)">Client-visible</b></small></div>
+                <div class="note"><span class="who">Jordan P.</span> — Guards food bowl around other dogs. Always feed in-suite, never in group.
+                  <small>Jun 30 · <b style="color:var(--p-bad)">Staff only</b></small></div>
+                <div class="note"><span class="who">Rosa K.</span> — Owner OK'd photo use on facility social media.
+                  <small>May 12 · <b style="color:var(--p-bad)">Staff only</b></small></div>
+              </div>
+              <div class="card">
+                <div class="hd"><b>Owner · Maya Alvarez</b><a href="#pet">Open client</a></div>
+                <dl class="kv">
+                  <dt>Phone</dt><dd>(555) 019-8804 · SMS opted in</dd>
+                  <dt>Pickup auth</dt><dd>Maya, Leo Alvarez, Dana Ruiz (neighbor)</dd>
+                  <dt>Balance</dt><dd style="color:var(--p-good)">$45.00 credit · 6 daycare passes left</dd>
+                  <dt>Emergency</dt><dd>Leo Alvarez · (555) 019-8805</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ 5. CLIENT APP ============ -->
+<section class="shot" id="client">
+  <div class="shot-head">
+    <div class="eyebrow">05 · Client — Installable PWA</div>
+    <h2>The client app: book, watch, pay</h2>
+    <p>Three moments in the client loop. Home leads with the pet's current stay and one-tap rebooking against real availability; the report card lands as a push notification mid-stay with photos and the care log; checkout is a saved card, a tip, and done. This is the surface competitors gate behind a $300 add-on — here it ships in every paid tier.</p>
+    <div class="callouts">
+      <span>Installable · push notifications</span><span>Real-time availability</span><span>Stripe saved cards + tips</span>
+    </div>
+  </div>
+  <div class="phones">
+    <div class="phone-unit">
+      <div class="phone"><div class="screen">
+        <div class="statusb"><span>9:41</span><span>◧ ⛭ ▮</span></div>
+        <div class="appbar"><span class="mk" style="background:var(--p-warm);color:#3D2A16">CC</span><b>Cedar Creek Pet Lodge</b><span class="bell"></span></div>
+        <div class="pbody">
+          <div class="pcard hero-stay">
+            <div class="lbl">Happening now</div>
+            <h5>Biscuit is at daycare 🐾</h5>
+            <small>Checked in 8:32 AM · Group 2 · pickup by 6 PM</small>
+            <div class="row"><span class="chipbtn">Report card</span><span class="chipbtn">Message us</span></div>
+          </div>
+          <div class="actgrid">
+            <div class="act"><span class="glyph" style="background:var(--p-primary-tint);color:var(--p-primary)">＋</span>Book a stay<small>boarding &amp; daycare</small></div>
+            <div class="act"><span class="glyph" style="background:var(--p-warm-tint);color:#A85A1E">✦</span>Buy a package<small>daycare passes</small></div>
+          </div>
+          <div class="pcard credit">
+            <span class="num">6</span>
+            <span><b>Daycare passes left</b><small>10-pack · expires Dec 31 · $45.00 account credit</small></span>
+          </div>
+          <div class="pcard">
+            <div class="lbl">Next up</div>
+            <div class="feedln"><span class="t">Aug 14</span><span><b>Boarding · 4 nights</b><small>Biscuit · deposit paid · Suite requested</small></span></div>
+            <div class="feedln"><span class="t">Tue/Thu</span><span><b>Recurring daycare</b><small>Luna-style standing booking · manage</small></span></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <span class="on"><span class="tico"></span>Home</span>
+          <span><span class="tico"></span>Book</span>
+          <span><span class="tico"></span>Photos</span>
+          <span><span class="tico"></span>Pay</span>
+          <span><span class="tico"></span>Profile</span>
+        </div>
+      </div></div>
+      <div class="phone-cap"><b>Home.</b> Live stay status up top; booking and packages one tap down.</div>
+    </div>
+
+    <div class="phone-unit">
+      <div class="phone"><div class="screen">
+        <div class="statusb"><span>3:12</span><span>◧ ⛭ ▮</span></div>
+        <div class="appbar"><span class="mk" style="background:var(--p-warm);color:#3D2A16">CC</span><b>Biscuit's report card</b></div>
+        <div class="pbody">
+          <div class="photo"><span class="tagph">Pool time · 11:40 AM</span></div>
+          <div class="rc-row">
+            <div class="photo two"><span class="tagph">Group 2</span></div>
+            <div class="photo" style="background:linear-gradient(160deg,#D9C08C,#96865E 70%)"><span class="tagph">Nap break</span></div>
+          </div>
+          <div class="pcard">
+            <div class="lbl">Today's care log</div>
+            <div class="feedln"><span class="t">8:32a</span><span><b>Checked in</b><small>bed + leash logged · happy tail</small></span></div>
+            <div class="feedln"><span class="t">9:05a</span><span><b>Play group 2</b><small>best friends with Luna today</small></span></div>
+            <div class="feedln"><span class="t">12:10p</span><span><b>Lunch · ate all</b><small>2 cups, slow bowl</small></span></div>
+            <div class="feedln"><span class="t">12:30p</span><span><b>Potty break ✓</b><small>logged by Priya</small></span></div>
+            <div class="feedln"><span class="t">2:45p</span><span><b>Meds given</b><small>Carprofen 75mg · photo attached</small></span></div>
+          </div>
+          <div class="pcard" style="border-color:var(--p-primary);background:var(--p-primary-tint)">
+            <b style="color:var(--p-primary-deep)">Note from the team</b>
+            <small style="color:#3E6459;display:block;margin-top:2px">Biscuit was the unofficial lifeguard at the wading pool today. He's earned his dinner! — Priya</small>
+          </div>
+        </div>
+        <div class="tabbar">
+          <span><span class="tico"></span>Home</span>
+          <span><span class="tico"></span>Book</span>
+          <span class="on"><span class="tico"></span>Photos</span>
+          <span><span class="tico"></span>Pay</span>
+          <span><span class="tico"></span>Profile</span>
+        </div>
+      </div></div>
+      <div class="phone-cap"><b>Report card.</b> Pushed mid-stay: photos, the timestamped care log, and a human note.</div>
+    </div>
+
+    <div class="phone-unit">
+      <div class="phone"><div class="screen">
+        <div class="statusb"><span>6:03</span><span>◧ ⛭ ▮</span></div>
+        <div class="appbar"><span class="mk" style="background:var(--p-warm);color:#3D2A16">CC</span><b>Checkout · Invoice #1856</b></div>
+        <div class="pbody">
+          <div class="pcard">
+            <div class="lbl">Biscuit · Aug 7</div>
+            <div class="payline"><span>Daycare · full day</span><b>1 pass</b></div>
+            <div class="payline"><span>Exit bath &amp; brush</span><b>$28.00</b></div>
+            <div class="payline"><span>House treat pack</span><b>$6.50</b></div>
+            <div class="payline total"><span>Total due</span><b>$34.50</b></div>
+          </div>
+          <div class="pcard">
+            <div class="lbl">Add a tip for the care team</div>
+            <div class="tips">
+              <div class="tip">15%<small>$5.18</small></div>
+              <div class="tip on">20%<small>$6.90</small></div>
+              <div class="tip">25%<small>$8.63</small></div>
+              <div class="tip">Other</div>
+            </div>
+            <div class="paybtn">Pay $41.40</div>
+            <div class="cardrow"><span class="cc"></span>Visa ·· 4412 · one tap, no re-entry</div>
+          </div>
+          <div class="pcard">
+            <div class="lbl">Messages</div>
+            <div class="feedln"><span class="t">5:48p</span><span><b>Cedar Creek</b><small>Biscuit's ready whenever you are — bathed &amp; brushed! 🛁</small></span></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <span><span class="tico"></span>Home</span>
+          <span><span class="tico"></span>Book</span>
+          <span><span class="tico"></span>Photos</span>
+          <span class="on"><span class="tico"></span>Pay</span>
+          <span><span class="tico"></span>Profile</span>
+        </div>
+      </div></div>
+      <div class="phone-cap"><b>Pay.</b> Passes auto-applied, tip presets, saved card via Stripe — checkout in seconds.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. WHITE-LABEL ============ -->
+<section class="shot" id="whitelabel">
+  <div class="shot-head">
+    <div class="eyebrow">06 · Platform — Per-tenant theming</div>
+    <h2>White-label: one PWA, every brand</h2>
+    <p>The same Home screen under two tenants. Each business's theme — logo, name, color tokens — is a config object the PWA loads at runtime, so upgrading to a paid tier flips branding without a deploy. Competitors charge $300 setup + $99/mo for this; here it's a row in the tenant's schema.</p>
+    <div class="callouts">
+      <span>Runtime theme config</span><span>No per-tenant fork or redeploy</span><span>Included in paid tiers</span>
+    </div>
+  </div>
+  <div class="duo">
+    <div class="phone-unit">
+      <div class="phone"><div class="screen">
+        <div class="statusb"><span>9:41</span><span>◧ ⛭ ▮</span></div>
+        <div class="appbar"><span class="mk" style="background:var(--p-warm);color:#3D2A16">CC</span><b>Cedar Creek Pet Lodge</b><span class="bell"></span></div>
+        <div class="pbody">
+          <div class="pcard hero-stay">
+            <div class="lbl">Happening now</div>
+            <h5>Biscuit is at daycare 🐾</h5>
+            <small>Checked in 8:32 AM · pickup by 6 PM</small>
+            <div class="row"><span class="chipbtn">Report card</span><span class="chipbtn">Message us</span></div>
+          </div>
+          <div class="actgrid">
+            <div class="act"><span class="glyph" style="background:var(--p-primary-tint);color:var(--p-primary)">＋</span>Book a stay<small>boarding &amp; daycare</small></div>
+            <div class="act"><span class="glyph" style="background:var(--p-warm-tint);color:#A85A1E">✦</span>Buy a package<small>daycare passes</small></div>
+          </div>
+          <div class="pcard credit"><span class="num">6</span><span><b>Daycare passes left</b><small>10-pack · expires Dec 31</small></span></div>
+        </div>
+        <div class="tabbar">
+          <span class="on"><span class="tico"></span>Home</span><span><span class="tico"></span>Book</span>
+          <span><span class="tico"></span>Photos</span><span><span class="tico"></span>Pay</span><span><span class="tico"></span>Profile</span>
+        </div>
+      </div></div>
+      <div class="phone-cap"><b>Tenant: Cedar Creek Pet Lodge.</b> Spruce &amp; apricot theme, their logo, their name on the home screen.</div>
+    </div>
+    <div class="phone-unit">
+      <div class="phone"><div class="screen t2">
+        <div class="statusb"><span>9:41</span><span>◧ ⛭ ▮</span></div>
+        <div class="appbar"><span class="mk">SP</span><b>Sunny Paws Daycare</b><span class="bell"></span></div>
+        <div class="pbody">
+          <div class="pcard hero-stay">
+            <div class="lbl">Happening now</div>
+            <h5>Mochi is at daycare ☀️</h5>
+            <small>Checked in 7:58 AM · pickup by 5:30 PM</small>
+            <div class="row"><span class="chipbtn">Report card</span><span class="chipbtn">Message us</span></div>
+          </div>
+          <div class="actgrid">
+            <div class="act"><span class="glyph">＋</span>Book a stay<small>daycare &amp; overnights</small></div>
+            <div class="act"><span class="glyph">✦</span>Buy a package<small>punch cards</small></div>
+          </div>
+          <div class="pcard credit"><span class="num">3</span><span><b>Punch card visits left</b><small>5-pack · renews monthly</small></span></div>
+        </div>
+        <div class="tabbar">
+          <span class="on"><span class="tico"></span>Home</span><span><span class="tico"></span>Book</span>
+          <span><span class="tico"></span>Photos</span><span><span class="tico"></span>Pay</span><span><span class="tico"></span>Profile</span>
+        </div>
+      </div></div>
+      <div class="phone-cap"><b>Tenant: Sunny Paws Daycare.</b> Same components, navy &amp; coral tokens from their theme config — zero code change.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="rule">
+    <p><b>What these mockups pin down:</b> the spruce/apricot product identity, the state-striped facility board as the operational centerpiece, capacity-aware scheduling with dashed pending holds, staff-only vs. client-visible note separation, and the token-driven white-label system.</p>
+    <p style="margin-top:12px"><b>Deliberately not shown yet:</b> POS register flow, reports gallery, online booking widget embed, staff scheduling/time clock, and settings — good candidates for the next mockup round before build.</p>
+  </div>
+</footer>

@@ -1,0 +1,51 @@
+import { useEffect, useState } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { fetchTenantMeta, type TenantMeta } from './api';
+import { Shell } from './components/Shell';
+import { Dashboard } from './pages/Dashboard';
+import { Board } from './pages/Board';
+import { Clients } from './pages/Clients';
+import { Calendar } from './pages/Calendar';
+import { PetProfile } from './pages/PetProfile';
+
+export default function App() {
+  const [tenant, setTenant] = useState<TenantMeta | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchTenantMeta()
+      .then((meta) => {
+        setTenant(meta);
+        document.title = meta.theme.appName;
+        // White-label: tenant theme config overrides the brand tokens at runtime.
+        const root = document.documentElement.style;
+        root.setProperty('--p-primary', meta.theme.primary);
+        root.setProperty('--p-primary-deep', meta.theme.primaryDeep);
+        root.setProperty('--p-warm', meta.theme.accent);
+        root.setProperty('--p-warm-text', meta.theme.accentText);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, []);
+
+  if (error) {
+    return (
+      <div className="hint error">
+        Could not reach the API ({error}). Is <code>npm run dev:api</code> running?
+      </div>
+    );
+  }
+  if (!tenant) return <div className="hint">Loading…</div>;
+
+  return (
+    <Shell tenant={tenant}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/board" element={<Board />} />
+        <Route path="/calendar" element={<Calendar />} />
+        <Route path="/clients" element={<Clients />} />
+        <Route path="/pets/:petId" element={<PetProfile />} />
+      </Routes>
+    </Shell>
+  );
+}
