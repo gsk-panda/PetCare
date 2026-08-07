@@ -1,5 +1,47 @@
 export type ServiceType = 'boarding' | 'daycare';
 
+/** Canonical care rounds. Order matters — it drives the rounds page. */
+export const CARE_SLOTS = ['AM', 'Midday', 'PM', 'Bedtime'] as const;
+export type CareSlot = (typeof CARE_SLOTS)[number];
+
+/** Nominal clock time for each round, used for sorting and "overdue" hints. */
+export const SLOT_HOURS: Record<CareSlot, number> = {
+  AM: 8,
+  Midday: 12,
+  PM: 17,
+  Bedtime: 21,
+};
+
+/**
+ * Medication schedules offered at check-in, mapped to the rounds they generate.
+ * "As needed" is deliberately empty: PRN medication is given on demand and
+ * should never show up as an outstanding task.
+ */
+export const MED_SCHEDULE_SLOTS: Record<string, CareSlot[]> = {
+  AM: ['AM'],
+  PM: ['PM'],
+  'AM + PM': ['AM', 'PM'],
+  Midday: ['Midday'],
+  'Every 8 hours': ['AM', 'Midday', 'Bedtime'],
+  'As needed': [],
+};
+
+export interface CareTask {
+  bookingId: string;
+  petId: string;
+  petName: string;
+  avatarColor: string;
+  runCode: string | null;
+  slot: CareSlot;
+  type: 'feeding' | 'medication';
+  /** Medication name; null for feeding. */
+  subject: string | null;
+  detail: string;
+  done: boolean;
+  doneAt: string | null;
+  doneBy: string | null;
+}
+
 export type BookingStatus =
   | 'requested'
   | 'confirmed'

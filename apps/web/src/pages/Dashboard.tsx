@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { DashboardStats } from '@petcare/shared';
 import { fetchBookings, fetchDashboard, type BookingRow } from '../api';
 import { NewBookingModal } from '../components/NewBookingModal';
+import { VaccineAlerts } from '../components/VaccineAlerts';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -130,6 +131,8 @@ export function Dashboard() {
             )}
           </div>
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <VaccineAlerts withinDays={30} />
           <div className="card">
             <div className="hd"><b>Occupancy · next 7 days</b></div>
             <div className="week">
@@ -152,6 +155,7 @@ export function Dashboard() {
               <span><i style={{ background: 'var(--p-primary)' }} />Boarding</span>
               <span><i style={{ background: '#9cc3b8' }} />Daycare</span>
             </div>
+          </div>
           </div>
         </div>
       </div>

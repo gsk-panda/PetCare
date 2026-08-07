@@ -1,4 +1,4 @@
-import type { DashboardStats, TenantTheme } from '@petcare/shared';
+import type { CareSlot, CareTask, DashboardStats, TenantTheme } from '@petcare/shared';
 
 // Phase 1: single-tenant dev default. Later: derive from subdomain/login.
 export const TENANT_SLUG = 'cedar-creek';
@@ -141,6 +141,90 @@ export interface PetProfile {
 }
 
 export const fetchPet = (petId: string) => get<PetProfile>(`/api/${TENANT_SLUG}/pets/${petId}`);
+
+export interface CareTasksResponse {
+  date: string;
+  tasks: CareTask[];
+  summary: { total: number; done: number; medicationOutstanding: number };
+}
+
+export const fetchCareTasks = (date: string) =>
+  get<CareTasksResponse>(`/api/${TENANT_SLUG}/care-tasks?date=${date}`);
+
+export interface CareLogReport {
+  date: string;
+  summary: {
+    pets: number;
+    feedingsScheduled: number;
+    feedingsGiven: number;
+    medicationsScheduled: number;
+    medicationsGiven: number;
+  };
+  pets: Array<{ petId: string; petName: string; runCode: string | null; tasks: CareTask[] }>;
+}
+
+export const fetchCareLog = (date: string) =>
+  get<CareLogReport>(`/api/${TENANT_SLUG}/reports/care-log?date=${date}`);
+
+interface CareTaskKey {
+  bookingId: string;
+  type: 'feeding' | 'medication';
+  slot: CareSlot;
+  subject?: string | null;
+  date: string;
+}
+
+export async function completeCareTask(key: CareTaskKey, note?: string): Promise<void> {
+  const res = await fetch(`/api/${TENANT_SLUG}/care-tasks`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ...key, note, staffName: 'Front desk' }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Could not log that round (${res.status})`);
+  }
+}
+
+export async function undoCareTask(key: CareTaskKey): Promise<void> {
+  const res = await fetch(`/api/${TENANT_SLUG}/care-tasks`, {
+    method: 'DELETE',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(key),
+  });
+  if (!res.ok) throw new Error(`Could not undo that round (${res.status})`);
+}
+
+export interface VaccineAlert {
+  id: string;
+  vaccine: string;
+  expiresOn: string;
+  daysLeft: number;
+  expired: boolean;
+  verified: boolean;
+  petId: string;
+  petName: string;
+  avatarColor: string;
+  clientName: string;
+  clientPhone: string | null;
+  stay: {
+    bookingId: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+    runCode: string | null;
+  } | null;
+  expiresDuringStay: boolean;
+}
+
+export interface VaccineAlertsResponse {
+  withinDays: number;
+  alerts: VaccineAlert[];
+  summary: { total: number; expired: number; duringStay: number };
+}
+
+export const fetchVaccineAlerts = (withinDays = 30) =>
+  get<VaccineAlertsResponse>(`/api/${TENANT_SLUG}/alerts/vaccines?withinDays=${withinDays}`);
 
 export interface PetOption {
   id: string;

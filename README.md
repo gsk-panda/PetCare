@@ -36,6 +36,8 @@ IDs, so any pet-profile URLs you had open will 404 afterwards.
 | Facility board | `/board` | `GET /api/:tenant/board`, check-in/out POSTs |
 | Calendar (week) | `/calendar` | `GET /api/:tenant/calendar?from&to` |
 | Clients & pets | `/clients` | `GET /api/:tenant/clients` |
+| Care rounds | `/care` | `GET/POST/DELETE /api/:tenant/care-tasks` |
+| Daily care log | `/reports/care-log` | `GET /api/:tenant/reports/care-log` |
 | Pet profile | `/pets/:petId` | `GET /api/:tenant/pets/:petId` |
 
 ## Drop-off intake
@@ -52,6 +54,31 @@ kept deliberately separate from the pet's standing profile:
 The panel prefills from the profile so the desk edits rather than retypes, and
 the pet profile shows both, side by side. Check-in writes the booking status,
 the care event, the intake row and the medication rows in one transaction.
+
+## Care rounds
+
+The intake is the schedule; `care_events` record completion. Feeding times and
+medication schedules expand into rounds (`AM`, `Midday`, `PM`, `Bedtime`) for
+every pet in house, and a tech checks them off as they go. `"As needed"`
+medication deliberately generates no round — PRN doses are given on demand and
+should never read as outstanding.
+
+A partial unique index on `(booking_id, type, slot, subject, care_date)` makes
+logging idempotent, so double-tapping a round cannot double-log a dose. Rounds
+can be undone for mis-taps. `care_date` is stored explicitly rather than derived
+from `occurred_at`, because casting a timestamptz to a date depends on the
+session timezone and so cannot be indexed.
+
+`/reports/care-log` reports the same data after the fact — given vs. missed,
+with times and staff — and is printable and CSV-exportable.
+
+## Vaccine alerts
+
+`GET /alerts/vaccines?withinDays=30` returns upcoming and lapsed expiries, and
+separately flags any that fall **during a booked stay**. That is the case a
+check-in-time check alone misses: the pet is compliant on arrival and lapses
+before pickup. Those are promoted on the dashboard and raised as a warning in
+the check-in panel naming the date and how far into the stay it falls.
 
 Booking state transitions are enforced server-side:
 `requested`/`confirmed` → `checked_in` → `checked_out`. Anything else returns

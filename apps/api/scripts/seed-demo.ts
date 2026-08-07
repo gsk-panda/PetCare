@@ -354,7 +354,81 @@ await withTenant(tenant.schemaName, async (db) => {
   await book('Pepper', 'boarding', 'requested', 1, 3, null, 'Online request · awaiting review');
   await book('Luna', 'boarding', 'requested', 2, 2, null, 'Online request · waitlist if full');
 
-  console.log('Seeded cedar-creek with runs, families, pets, vaccinations, and bookings.');
+  // --- Drop-off intake for pets already in house ---------------------------
+  // Stays seeded as already checked in need the intake a real check-in would
+  // have captured, otherwise the care rounds have nothing to schedule.
+  const { rows: inHouse } = await db.query(
+    `SELECT b.id, b.service_type, p.name, p.feeding_notes, p.medication_notes
+     FROM bookings b JOIN pets p ON p.id = b.pet_id
+     WHERE b.status = 'checked_in'`,
+  );
+  const COLLARS = ['Flat buckle', 'Martingale', 'Harness', 'Slip lead'];
+  const BOWLS = ['Standard', 'Standard', 'Slow-feed', 'Elevated'];
+  const FOODS = [
+    'Purina Pro Plan chicken & rice',
+    'Blue Buffalo lamb',
+    'Hill’s Science Diet adult',
+    'Owner-portioned raw, thawed daily',
+    'Taste of the Wild bison',
+  ];
+  const MEDS = [
+    ['Carprofen', '75 mg · 1 tablet', 'AM + PM'],
+    ['Apoquel', '16 mg · 1 tablet', 'AM'],
+    ['Gabapentin', '100 mg · 1 capsule', 'PM'],
+    ['Thyroid tablet', '0.5 mg', 'AM + PM'],
+    ['Ear drops', '2 drops each ear', 'AM'],
+    ['Insulin', '4 units', 'AM + PM'],
+  ] as const;
+
+  for (const stay of inHouse) {
+    const daycare = stay.service_type === 'daycare';
+    const times = daycare
+      ? ['Midday']
+      : rnd() > 0.75
+        ? ['AM', 'Midday', 'PM']
+        : ['AM', 'PM'];
+    const ownerFood = rnd() > 0.3;
+    await db.query(
+      `INSERT INTO stay_intake (
+         booking_id, belongings, collar_type, food_source, food_description,
+         feeding_amount, feeding_times, bowl_type, treats_allowed, treats_notes,
+         bones_allowed, bones_notes, recorded_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       ON CONFLICT (booking_id) DO NOTHING`,
+      [
+        stay.id,
+        ['Leash', rnd() > 0.5 ? 'Bed' : null, rnd() > 0.6 ? 'Toys' : null,
+          ownerFood ? 'Food container' : null].filter(Boolean).join(', '),
+        pick(COLLARS),
+        ownerFood ? 'owner' : 'house',
+        ownerFood ? (stay.feeding_notes ?? pick(FOODS)) : 'House food',
+        `${[0.5, 1, 1.5, 2, 3][between(0, 4)]} cups`,
+        times,
+        pick(BOWLS),
+        rnd() > 0.15,
+        rnd() > 0.8 ? 'Owner-supplied only' : null,
+        rnd() > 0.7,
+        null,
+        'Front desk',
+      ],
+    );
+
+    // Anything flagged on the profile gets a real schedule; a few others pick
+    // up a stay-only medication, which is the common real-world case.
+    const wantsMeds = Boolean(stay.medication_notes) || rnd() > 0.78;
+    if (wantsMeds && !daycare) {
+      const [name, dose, schedule] = pick(MEDS);
+      await db.query(
+        `INSERT INTO stay_medications (booking_id, name, dose, schedule, with_food, notes)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [stay.id, name, dose, schedule, rnd() > 0.3, rnd() > 0.7 ? 'Owner supplied doses' : null],
+      );
+    }
+  }
+
+  console.log(
+    `Seeded cedar-creek: ${inHouse.length} in-house stays with drop-off intake, plus runs, families, pets, vaccinations and bookings.`,
+  );
 });
 
 await pool.end();

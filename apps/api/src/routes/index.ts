@@ -6,6 +6,8 @@ import { dashboardRoutes } from './dashboard.js';
 import { bookingRoutes } from './bookings.js';
 import { calendarRoutes } from './calendar.js';
 import { runRoutes } from './runs.js';
+import { careRoutes } from './care.js';
+import { alertRoutes } from './alerts.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -41,4 +43,6 @@ export async function tenantRoutes(app: FastifyInstance): Promise<void> {
   await app.register(bookingRoutes);
   await app.register(calendarRoutes);
   await app.register(runRoutes);
+  await app.register(careRoutes);
+  await app.register(alertRoutes);
 }

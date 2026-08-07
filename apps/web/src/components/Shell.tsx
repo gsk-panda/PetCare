@@ -5,6 +5,7 @@ import type { TenantMeta } from '../api';
 const links = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/board', label: 'Facility board' },
+  { to: '/care', label: 'Care rounds' },
   { to: '/calendar', label: 'Calendar' },
   { to: '/clients', label: 'Clients & pets' },
 ];

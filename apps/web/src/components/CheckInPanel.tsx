@@ -95,6 +95,14 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
       const d = daysUntil(v.expiresOn);
       return d >= 0 && d <= 45;
     }) ?? [];
+  // The case a check-in-time check alone misses: compliant on arrival, expired
+  // before pickup.
+  const expiringDuringStay = (pet?.vaccinations ?? []).filter(
+    (v) =>
+      daysUntil(v.expiresOn) >= 0 &&
+      v.expiresOn >= occupant.startDate &&
+      v.expiresOn <= occupant.endDate,
+  );
 
   const namedMeds = meds.filter((m) => m.name.trim());
   const medsIncomplete = needsMeds && namedMeds.length === 0;
@@ -185,6 +193,24 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
                 <div className="form-error">
                   {expired.map((v) => v.vaccine).join(', ')} expired. Get an updated record
                   before this pet joins a group.
+                </div>
+              )}
+              {expiringDuringStay.length > 0 && (
+                <div className="stay-expiry-warning">
+                  <b>Expires during this stay</b>
+                  <ul>
+                    {expiringDuringStay.map((v) => (
+                      <li key={v.id}>
+                        {v.vaccine} expires {v.expiresOn} — {daysUntil(v.expiresOn)} day
+                        {daysUntil(v.expiresOn) === 1 ? '' : 's'} in, before pickup on{' '}
+                        {occupant.endDate}
+                      </li>
+                    ))}
+                  </ul>
+                  <small>
+                    Get an updated record from the owner at drop-off. This pet is compliant
+                    today but will not be for the whole stay.
+                  </small>
                 </div>
               )}
               {pet.allergyNotes && (

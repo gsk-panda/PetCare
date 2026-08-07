@@ -7,6 +7,8 @@ import { Board } from './pages/Board';
 import { Clients } from './pages/Clients';
 import { Calendar } from './pages/Calendar';
 import { PetProfile } from './pages/PetProfile';
+import { CareRounds } from './pages/CareRounds';
+import { CareLogReport } from './pages/CareLogReport';
 
 export default function App() {
   const [tenant, setTenant] = useState<TenantMeta | null>(null);
@@ -44,6 +46,8 @@ export default function App() {
         <Route path="/board" element={<Board />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/clients" element={<Clients />} />
+        <Route path="/care" element={<CareRounds />} />
+        <Route path="/reports/care-log" element={<CareLogReport />} />
         <Route path="/pets/:petId" element={<PetProfile />} />
       </Routes>
     </Shell>
