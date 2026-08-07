@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { DashboardStats } from '@petcare/shared';
 import { fetchBookings, fetchDashboard, type BookingRow } from '../api';
+import { NewBookingModal } from '../components/NewBookingModal';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -16,8 +17,9 @@ export function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [arrivals, setArrivals] = useState<BookingRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [booking, setBooking] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10);
     Promise.all([fetchDashboard(), fetchBookings(today, today)])
       .then(([s, b]) => {
@@ -26,6 +28,7 @@ export function Dashboard() {
       })
       .catch((e: Error) => setError(e.message));
   }, []);
+  useEffect(load, [load]);
 
   if (error) return <div className="hint error">Failed to load dashboard: {error}</div>;
   if (!stats) return <div className="hint">Loading dashboard…</div>;
@@ -44,9 +47,14 @@ export function Dashboard() {
         <h1>Good morning, Rosa</h1>
         <span className="date">{todayStr}</span>
         <div className="right">
-          <button className="btn">+ New booking</button>
+          <button className="btn" onClick={() => setBooking(true)}>
+            + New booking
+          </button>
         </div>
       </div>
+      {booking && (
+        <NewBookingModal onClose={() => setBooking(false)} onCreated={load} />
+      )}
       <div className="content">
         <div className="tiles">
           <div className="tile">

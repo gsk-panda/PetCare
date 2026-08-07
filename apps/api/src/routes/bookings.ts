@@ -53,6 +53,18 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
     if (!petId || !serviceType || !startDate || !endDate) {
       return reply.code(400).send({ error: 'petId, serviceType, startDate, endDate are required' });
     }
+    if (serviceType !== 'boarding' && serviceType !== 'daycare') {
+      return reply.code(400).send({ error: "serviceType must be 'boarding' or 'daycare'" });
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      return reply.code(400).send({ error: 'startDate/endDate must be YYYY-MM-DD' });
+    }
+    if (endDate < startDate) {
+      return reply.code(400).send({ error: 'endDate must not be before startDate' });
+    }
+    if (serviceType === 'boarding' && endDate === startDate) {
+      return reply.code(400).send({ error: 'A boarding stay must cover at least one night' });
+    }
     return withTenant(req.tenant.schemaName, async (db) => {
       const { rows: petRows } = await db.query(
         'SELECT client_id FROM pets WHERE id = $1',
@@ -71,6 +83,27 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
         );
         if (conflicts.length > 0) {
           return reply.code(409).send({ error: 'Run already booked for those dates' });
+        }
+      }
+
+      // Daycare play groups are capacity-based rather than exclusive.
+      if (runId && serviceType === 'daycare') {
+        const { rows: full } = await db.query(
+          `SELECT r.code, r.capacity, COUNT(b.id)::int AS booked
+           FROM runs r
+           LEFT JOIN bookings b
+             ON b.run_id = r.id AND b.service_type = 'daycare'
+            AND b.status IN ('requested', 'confirmed', 'checked_in')
+            AND b.start_date = $2::date
+           WHERE r.id = $1
+           GROUP BY r.code, r.capacity
+           HAVING COUNT(b.id) >= r.capacity`,
+          [runId, startDate],
+        );
+        if (full[0]) {
+          return reply.code(409).send({
+            error: `Play group ${full[0].code} is full that day (${full[0].booked}/${full[0].capacity})`,
+          });
         }
       }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchCalendar, type BookingRow, type CalendarResponse } from '../api';
+import { NewBookingModal } from '../components/NewBookingModal';
 
 const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -39,6 +40,7 @@ export function Calendar() {
   const [anchor, setAnchor] = useState(() => weekStart(new Date()));
   const [data, setData] = useState<CalendarResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bookingDate, setBookingDate] = useState<string | null>(null);
 
   const from = isoDate(anchor);
   const to = isoDate(addDays(anchor, 6));
@@ -72,9 +74,18 @@ export function Calendar() {
           <button className="btn ghost" onClick={() => setAnchor((a) => addDays(a, 7))}>
             Next ›
           </button>
-          <button className="btn">+ New booking</button>
+          <button className="btn" onClick={() => setBookingDate(today)}>
+            + New booking
+          </button>
         </div>
       </div>
+      {bookingDate && (
+        <NewBookingModal
+          initialDate={bookingDate}
+          onClose={() => setBookingDate(null)}
+          onCreated={load}
+        />
+      )}
       <div className="content">
         <div className="board-legend">
           <span><i style={{ background: 'var(--p-primary)' }} />Boarding</span>
@@ -101,10 +112,15 @@ export function Calendar() {
                   : 0;
                 return (
                   <div key={day.date} className={`col${day.date === today ? ' today' : ''}`}>
-                    <div className="dh">
+                    <button
+                      type="button"
+                      className="dh"
+                      onClick={() => setBookingDate(day.date)}
+                      title={`New booking on ${day.date}`}
+                    >
                       {DOW[date.getDay()]}
                       <b>{date.getDate()}</b>
-                    </div>
+                    </button>
 
                     {boarding.slice(0, 3).map((b) => (
                       <div key={b.id} className="evt b">

@@ -111,6 +111,55 @@ export interface PetProfile {
 
 export const fetchPet = (petId: string) => get<PetProfile>(`/api/${TENANT_SLUG}/pets/${petId}`);
 
+export interface PetOption {
+  id: string;
+  name: string;
+  breed: string | null;
+  avatarColor: string;
+  clientName: string;
+}
+
+export interface RunOption {
+  id: string;
+  code: string;
+  zone: string;
+  kind: string;
+  capacity: number;
+  available: boolean;
+  takenBy: string | null;
+  remaining: number;
+}
+
+export const fetchPets = () => get<{ pets: PetOption[] }>(`/api/${TENANT_SLUG}/pets`);
+
+export const fetchRuns = (from: string, to: string, serviceType: 'boarding' | 'daycare') =>
+  get<{ runs: RunOption[] }>(
+    `/api/${TENANT_SLUG}/runs?from=${from}&to=${to}&serviceType=${serviceType}`,
+  );
+
+export interface NewBooking {
+  petId: string;
+  serviceType: 'boarding' | 'daycare';
+  startDate: string;
+  endDate: string;
+  runId?: string;
+  notes?: string;
+}
+
+/** Throws with the server's message so the form can show conflicts verbatim. */
+export async function createBooking(booking: NewBooking): Promise<{ id: string }> {
+  const res = await fetch(`/api/${TENANT_SLUG}/bookings`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(booking),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Could not save the booking (${res.status})`);
+  }
+  return res.json() as Promise<{ id: string }>;
+}
+
 export async function checkIn(bookingId: string): Promise<void> {
   const res = await fetch(`/api/${TENANT_SLUG}/bookings/${bookingId}/check-in`, {
     method: 'POST',
