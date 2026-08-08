@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { withTenant } from '../db.js';
+import { MANAGES_SETTINGS } from '../staff-auth.js';
 
 const CODE_RE = /^[A-Z0-9_-]{2,16}$/;
 
@@ -11,6 +12,18 @@ const CODE_RE = /^[A-Z0-9_-]{2,16}$/;
  * mixed group — so nothing here assumes more than one exists.
  */
 export async function settingsRoutes(app: FastifyInstance): Promise<void> {
+  // Anyone signed in can read the configuration; changing it is a manager job.
+  const requireManager = async (
+    req: { staff: { role: string } },
+    reply: { code: (n: number) => { send: (b: unknown) => unknown } },
+  ) => {
+    if (!MANAGES_SETTINGS.includes(req.staff.role as never)) {
+      return reply.code(403).send({
+        error: 'Only an owner or manager can change facility settings',
+      });
+    }
+  };
+
   app.get('/settings/play-groups', async (req) => {
     return withTenant(req.tenant.schemaName, async (db) => {
       const { rows } = await db.query(
@@ -41,6 +54,7 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: { code?: string; label?: string; capacity?: number } }>(
     '/settings/play-groups',
+    { preHandler: requireManager },
     async (req, reply) => {
       const label = req.body?.label?.trim();
       const capacity = Number(req.body?.capacity);
@@ -78,7 +92,7 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
   app.patch<{
     Params: { groupId: string };
     Body: { label?: string; capacity?: number; active?: boolean };
-  }>('/settings/play-groups/:groupId', async (req, reply) => {
+  }>('/settings/play-groups/:groupId', { preHandler: requireManager }, async (req, reply) => {
     const { label, capacity, active } = req.body ?? {};
     if (capacity !== undefined && (!Number.isInteger(capacity) || capacity < 1 || capacity > 200)) {
       return reply.code(400).send({ error: 'capacity must be a whole number from 1 to 200' });

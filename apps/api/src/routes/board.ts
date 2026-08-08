@@ -175,10 +175,12 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
           return reply.code(409).send({ error: 'Booking is not awaiting check-in' });
         }
 
+        // Attribution comes from the session, never the request body: a log
+        // the caller can name themselves in is not an audit trail.
         await db.query(
-          `INSERT INTO care_events (booking_id, pet_id, type, staff_name, note)
-           VALUES ($1, $2, 'checkin', $3, $4)`,
-          [rows[0].id, rows[0].pet_id, b.staffName ?? null, parts.join(' ') || null],
+          `INSERT INTO care_events (booking_id, pet_id, type, staff_name, staff_id, note)
+           VALUES ($1, $2, 'checkin', $3, $4, $5)`,
+          [rows[0].id, rows[0].pet_id, req.staff.name, req.staff.id, parts.join(' ') || null],
         );
 
         if (intake) {
@@ -239,11 +241,11 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
       }
     });
   });
-  app.post<{ Params: { bookingId: string }; Body: { staffName?: string } }>(
+  app.post<{ Params: { bookingId: string } }>(
     '/bookings/:bookingId/check-out',
     async (req, reply) => {
       return transition(req.tenant.schemaName, req.params.bookingId, 'checked_out', 'checkout',
-        req.body?.staffName, reply);
+        req.staff, reply);
     },
   );
 }
@@ -253,7 +255,7 @@ async function transition(
   bookingId: string,
   status: 'checked_in' | 'checked_out',
   eventType: 'checkin' | 'checkout',
-  staffName: string | undefined,
+  staff: { id: string; name: string },
   reply: { code: (n: number) => { send: (b: unknown) => unknown } },
   note?: string,
 ) {
@@ -270,9 +272,9 @@ async function transition(
       return reply.code(409).send({ error: `Booking is not in a state that allows ${status}` });
     }
     await db.query(
-      `INSERT INTO care_events (booking_id, pet_id, type, staff_name, note)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [bookingId, rows[0].pet_id, eventType, staffName ?? null, note ?? null],
+      `INSERT INTO care_events (booking_id, pet_id, type, staff_name, staff_id, note)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [bookingId, rows[0].pet_id, eventType, staff.name, staff.id, note ?? null],
     );
     return { id: rows[0].id, status: rows[0].status };
   });

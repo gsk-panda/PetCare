@@ -143,11 +143,10 @@ export async function careRoutes(app: FastifyInstance): Promise<void> {
       slot: CareSlot;
       subject?: string | null;
       note?: string;
-      staffName?: string;
       date?: string;
     };
   }>('/care-tasks', async (req, reply) => {
-    const { bookingId, type, slot, subject, note, staffName } = req.body ?? {};
+    const { bookingId, type, slot, subject, note } = req.body ?? {};
     const date = req.body?.date ?? new Date().toISOString().slice(0, 10);
     if (!bookingId || (type !== 'feeding' && type !== 'medication')) {
       return reply.code(400).send({ error: "bookingId and type ('feeding'|'medication') required" });
@@ -167,13 +166,15 @@ export async function careRoutes(app: FastifyInstance): Promise<void> {
       if (!booking[0]) return reply.code(404).send({ error: 'Booking not found' });
 
       // Idempotent: double-tapping a round must not double-log a dose.
+      // Who gave the dose comes from the session, not the request body.
       const { rows } = await db.query(
-        `INSERT INTO care_events (booking_id, pet_id, type, slot, subject, note, staff_name, care_date)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::date)
+        `INSERT INTO care_events
+           (booking_id, pet_id, type, slot, subject, note, staff_name, staff_id, care_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::date)
          ON CONFLICT DO NOTHING
          RETURNING id, occurred_at`,
         [bookingId, booking[0].pet_id, type, slot, subject ?? null, note ?? null,
-          staffName ?? null, date],
+          req.staff.name, req.staff.id, date],
       );
       return { recorded: rows.length > 0, alreadyLogged: rows.length === 0 };
     });

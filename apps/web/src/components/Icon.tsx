@@ -17,7 +17,8 @@ export type IconName =
   | 'refresh'
   | 'daycare'
   | 'settings'
-  | 'search';
+  | 'search'
+  | 'signout';
 
 const PATHS: Record<IconName, JSX.Element> = {
   dashboard: (
@@ -89,6 +90,12 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <circle cx="11" cy="11" r="6.5" />
       <path d="m16 16 4.5 4.5" />
+    </>
+  ),
+  signout: (
+    <>
+      <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+      <path d="M10 8 6 12l4 4M6 12h9" />
     </>
   ),
 };

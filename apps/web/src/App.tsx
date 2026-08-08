@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { fetchTenantMeta, type TenantMeta } from './api';
+import { fetchStaffMe, fetchTenantMeta, type StaffUser, type TenantMeta } from './api';
 import { Shell } from './components/Shell';
+import { StaffSignIn } from './components/StaffSignIn';
 import { Dashboard } from './pages/Dashboard';
 import { Board } from './pages/Board';
 import { Clients } from './pages/Clients';
@@ -53,8 +54,23 @@ export default function App() {
 }
 
 function StaffApp({ tenant }: { tenant: TenantMeta }) {
+  const [staff, setStaff] = useState<StaffUser | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    fetchStaffMe()
+      .then((r) => setStaff(r.staff))
+      .catch(() => setStaff(null))
+      .finally(() => setChecking(false));
+  }, []);
+
+  if (checking) return <div className="hint">Loading…</div>;
+  if (!staff) {
+    return <StaffSignIn tenantName={tenant.name} onSignedIn={setStaff} />;
+  }
+
   return (
-    <Shell tenant={tenant}>
+    <Shell tenant={tenant} staff={staff} onSignedOut={() => setStaff(null)}>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />

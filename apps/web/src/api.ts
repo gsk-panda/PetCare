@@ -3,10 +3,55 @@ import type { CareSlot, CareTask, DashboardStats, TenantTheme } from '@petcare/s
 // Phase 1: single-tenant dev default. Later: derive from subdomain/login.
 export const TENANT_SLUG = 'cedar-creek';
 
+/** Raised when the staff session is missing or expired, so the app can re-gate. */
+export class StaffAuthError extends Error {
+  constructor() {
+    super('Sign in to continue');
+    this.name = 'StaffAuthError';
+  }
+}
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+  const res = await fetch(path, { credentials: 'include' });
+  if (res.status === 401) throw new StaffAuthError();
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${path}`);
   return res.json() as Promise<T>;
+}
+
+export interface StaffUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  role: 'owner' | 'manager' | 'kennel_tech' | 'front_desk';
+}
+
+export const ROLE_LABEL: Record<StaffUser['role'], string> = {
+  owner: 'Owner',
+  manager: 'Manager',
+  kennel_tech: 'Kennel tech',
+  front_desk: 'Front desk',
+};
+
+export const fetchStaffMe = () => get<{ staff: StaffUser }>(`/api/${TENANT_SLUG}/staff/me`);
+
+export async function staffLogin(email: string, password: string): Promise<StaffUser> {
+  const res = await fetch(`/api/${TENANT_SLUG}/staff/login`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? 'Could not sign in');
+  }
+  return ((await res.json()) as { staff: StaffUser }).staff;
+}
+
+export async function staffLogout(): Promise<void> {
+  await fetch(`/api/${TENANT_SLUG}/staff/logout`, { method: 'POST', credentials: 'include' });
 }
 
 export interface TenantMeta {
@@ -109,6 +154,7 @@ export const fetchPlayGroups = () =>
 async function send<T>(path: string, method: string, body: unknown): Promise<T> {
   const res = await fetch(`/api/${TENANT_SLUG}${path}`, {
     method,
+    credentials: 'include',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
@@ -221,8 +267,9 @@ interface CareTaskKey {
 export async function completeCareTask(key: CareTaskKey, note?: string): Promise<void> {
   const res = await fetch(`/api/${TENANT_SLUG}/care-tasks`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ ...key, note, staffName: 'Front desk' }),
+    body: JSON.stringify({ ...key, note }),
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -233,6 +280,7 @@ export async function completeCareTask(key: CareTaskKey, note?: string): Promise
 export async function undoCareTask(key: CareTaskKey): Promise<void> {
   const res = await fetch(`/api/${TENANT_SLUG}/care-tasks`, {
     method: 'DELETE',
+    credentials: 'include',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(key),
   });
@@ -309,6 +357,7 @@ export interface NewBooking {
 export async function createBooking(booking: NewBooking): Promise<{ id: string }> {
   const res = await fetch(`/api/${TENANT_SLUG}/bookings`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(booking),
   });
@@ -356,8 +405,9 @@ export async function checkIn(
 ): Promise<void> {
   const res = await fetch(`/api/${TENANT_SLUG}/bookings/${bookingId}/check-in`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ staffName: 'Front desk', ...checklist }),
+    body: JSON.stringify(checklist),
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -368,8 +418,9 @@ export async function checkIn(
 export async function checkOut(bookingId: string): Promise<void> {
   const res = await fetch(`/api/${TENANT_SLUG}/bookings/${bookingId}/check-out`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ staffName: 'Front desk' }),
+    body: JSON.stringify({}),
   });
   if (!res.ok) throw new Error(`Check-out failed: ${res.status}`);
 }

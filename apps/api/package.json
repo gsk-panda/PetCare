@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "migrate": "tsx scripts/migrate.ts",
     "provision": "tsx scripts/provision-tenant.ts",
-    "seed:demo": "tsx scripts/seed-demo.ts"
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "seed:staff": "tsx scripts/seed-staff.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

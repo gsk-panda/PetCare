@@ -11,6 +11,7 @@
     "migrate": "npm run migrate -w @petcare/api",
     "provision": "npm run provision -w @petcare/api",
     "seed:demo": "npm run seed:demo -w @petcare/api",
-    "seed:reset": "npm run seed:demo -w @petcare/api -- --reset"
+    "seed:reset": "npm run seed:demo -w @petcare/api -- --reset",
+    "seed:staff": "npm run seed:staff -w @petcare/api"
   }
 }

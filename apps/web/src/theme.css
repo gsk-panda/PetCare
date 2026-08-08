@@ -161,8 +161,32 @@ input, select, textarea { font: inherit; color: inherit; }
   width: 28px; height: 28px; border-radius: var(--r-pill); background: var(--accent); color: var(--accent-ink);
   display: grid; place-items: center; font-size: var(--t-2xs); font-weight: 700;
 }
+.whoami-who { min-width: 0; flex: 1; }
 .whoami b { font-size: var(--t-xs); color: #fff; display: block; line-height: 1.3; }
 .whoami small { font-size: var(--t-2xs); color: #78838d; }
+.signout {
+  color: #8d99a4; width: 26px; height: 26px; border-radius: var(--r-sm);
+  display: grid; place-items: center; flex-shrink: 0;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.signout:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+/* ---- Staff sign in ---- */
+.signin { min-height: 100%; display: grid; place-items: center; padding: var(--s-5); background: var(--ground); }
+.signin-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: var(--s-6) var(--s-5); width: min(380px, 100%);
+  display: flex; flex-direction: column; gap: var(--s-3);
+}
+.signin-mark {
+  width: 44px; height: 44px; border-radius: var(--r-md); background: var(--brand);
+  color: #fff; display: grid; place-items: center; font-weight: 700;
+  font-size: var(--t-sm); letter-spacing: 0.03em; margin: 0 auto var(--s-2);
+}
+.signin-card h1 { font-size: var(--t-lg); font-weight: 650; text-align: center; letter-spacing: -0.015em; }
+.signin-card > p { font-size: var(--t-sm); color: var(--ink-3); text-align: center; margin-bottom: var(--s-2); }
+.signin-card .btn { justify-content: center; padding: 10px 14px; margin-top: var(--s-1); }
+.signin-fine { font-size: var(--t-xs); color: var(--ink-3); text-align: center; margin-top: var(--s-2); }
 
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; }
 
