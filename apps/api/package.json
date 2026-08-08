@@ -12,6 +12,7 @@
     "seed:demo": "tsx scripts/seed-demo.ts"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^10.0.0",
     "@petcare/shared": "*",
     "fastify": "^5.0.0",

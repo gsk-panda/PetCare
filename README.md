@@ -55,6 +55,41 @@ The panel prefills from the profile so the desk edits rather than retypes, and
 the pet profile shows both, side by side. Check-in writes the booking status,
 the care event, the intake row and the medication rows in one transaction.
 
+## Client portal
+
+`/portal` is the owner-facing app, mounted outside the staff shell with its own
+navigation and a deliberately looser density — it is opened a few times a stay,
+usually one-handed on a phone.
+
+**Authentication.** Owners sign in passwordlessly: a six-digit code is emailed
+to an address already on a client record, exchanged for an httpOnly session
+cookie. Codes and session tokens are stored hashed, codes expire in 10 minutes
+and burn after 5 failed attempts, and an unknown email returns the same
+response as a known one so the endpoint cannot be used to discover customers.
+
+**Every portal query is scoped to the session's `client_id`.** Reaching another
+client's pet, stay log or booking returns 404, and no session returns 401.
+
+Owners can book, reschedule and cancel; edit feeding, medication and allergy
+notes; upload a pet photo; add vaccination records; maintain contact details
+and address; manage SMS consent; and read the care log for any stay.
+
+Two deliberate rules:
+
+- Owner-submitted vaccination records land **unverified**. The desk confirms
+  against the paperwork at drop-off, so the portal can never assert compliance.
+- Owner bookings and date changes land as `requested` with no run assigned, so
+  they enter the same review the board already shows. A change re-enters review
+  because an assigned run may no longer fit the new dates.
+
+### Not production ready
+
+- **No mailer is wired.** Outside production the login code is returned in the
+  API response and shown on screen so the flow is testable. Connect SES or
+  Twilio and delete that branch before exposing this to real clients.
+- **Pet photos are stored inline** as data URLs, resized client-side to 640px.
+  The architecture calls for S3 + CloudFront; the column then holds a key.
+
 ## Care rounds
 
 The intake is the schedule; `care_events` record completion. Feeding times and

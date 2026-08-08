@@ -64,11 +64,14 @@ await withTenant(tenant.schemaName, async (db) => {
     }> = [],
   ) => {
     const { rows } = await db.query(
-      `INSERT INTO clients (first_name, last_name, phone, sms_opt_in, balance_cents,
+      `INSERT INTO clients (first_name, last_name, email, phone, sms_opt_in, balance_cents,
                             emergency_name, emergency_phone, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
       [
-        first, last, phone, opts.smsOptIn ?? true, opts.balanceCents ?? 0,
+        first, last,
+        // Portal sign-in keys off this address, so every seeded client needs one.
+        `${first}.${last}`.replace(/[^A-Za-z.]/g, '').toLowerCase() + '@example.com',
+        phone, opts.smsOptIn ?? true, opts.balanceCents ?? 0,
         opts.emergency?.[0] ?? null, opts.emergency?.[1] ?? null,
         opts.isNew ? new Date() : new Date(Date.now() - 200 * 24 * 3600 * 1000),
       ],

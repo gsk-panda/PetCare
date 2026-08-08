@@ -1,11 +1,14 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
 import { tenantRoutes } from './routes/index.js';
 import { getTenantBySlug } from './tenants.js';
 
 const app = Fastify({ logger: true });
 
-await app.register(cors, { origin: true });
+// Credentials are required so the portal session cookie survives the dev proxy.
+await app.register(cors, { origin: true, credentials: true });
+await app.register(cookie);
 
 app.get('/health', async () => ({ ok: true }));
 

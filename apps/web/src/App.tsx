@@ -11,6 +11,7 @@ import { Settings } from './pages/Settings';
 import { PetProfile } from './pages/PetProfile';
 import { CareRounds } from './pages/CareRounds';
 import { CareLogReport } from './pages/CareLogReport';
+import { PortalApp } from './portal/PortalApp';
 
 export default function App() {
   const [tenant, setTenant] = useState<TenantMeta | null>(null);
@@ -42,6 +43,16 @@ export default function App() {
   }
   if (!tenant) return <div className="hint">Loading…</div>;
 
+  return (
+    <Routes>
+      {/* The owner-facing portal has its own shell, navigation and density. */}
+      <Route path="/portal/*" element={<PortalApp />} />
+      <Route path="/*" element={<StaffApp tenant={tenant} />} />
+    </Routes>
+  );
+}
+
+function StaffApp({ tenant }: { tenant: TenantMeta }) {
   return (
     <Shell tenant={tenant}>
       <Routes>
