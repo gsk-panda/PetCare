@@ -48,7 +48,7 @@ export async function runSettingsRoutes(app: FastifyInstance): Promise<void> {
                 ) AS in_use
          FROM runs r
          WHERE r.kind IN ('suite', 'run')
-         ORDER BY r.display_order, r.code`,
+         ORDER BY r.code_prefix, r.code_number, r.code`,
       );
       return {
         types: types.map((t) => ({
@@ -235,12 +235,15 @@ export async function runSettingsRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
+      // Ordering comes from code_prefix/code_number, not this column. Seed it
+      // from the code anyway so nothing reading display_order disagrees with
+      // where the run actually appears.
       await db.query(
         `INSERT INTO runs (code, zone, kind, capacity, display_order, run_type_id)
          SELECT c.code, $2, $3, $4,
-                COALESCE((SELECT MAX(display_order) FROM runs), 0) + c.ord,
+                COALESCE(NULLIF(substring(c.code from '[0-9]+$'), '')::integer, 0),
                 $5
-         FROM unnest($1::text[]) WITH ORDINALITY AS c(code, ord)`,
+         FROM unnest($1::text[]) AS c(code)`,
         [codes, type[0].zone_label, type[0].kind, capacity, runTypeId],
       );
       reply.code(201);

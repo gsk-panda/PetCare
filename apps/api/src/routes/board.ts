@@ -84,7 +84,7 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
          LEFT JOIN clients c ON c.id = b.client_id
          ORDER BY
            CASE r.kind WHEN 'suite' THEN 1 WHEN 'run' THEN 2 ELSE 3 END,
-           r.zone, r.display_order, r.code, p.name`,
+           r.zone, r.code_prefix, r.code_number, r.code, p.name`,
       );
 
       const byRun = new Map<string, {

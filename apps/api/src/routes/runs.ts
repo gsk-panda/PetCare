@@ -46,7 +46,7 @@ export async function runRoutes(app: FastifyInstance): Promise<void> {
              LIMIT 1
            ) AS conflict ON true
            WHERE r.kind IN ('suite', 'run')
-           ORDER BY r.zone, r.display_order, r.code`,
+           ORDER BY r.zone, r.code_prefix, r.code_number, r.code`,
           [from, to],
         );
         return {
