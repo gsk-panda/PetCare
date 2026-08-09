@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { checkOut, fetchBoard, type BoardCell, type BoardOccupant } from '../api';
+import { fetchBoard, type BoardCell, type BoardOccupant } from '../api';
 import { CheckInPanel } from '../components/CheckInPanel';
+import { CheckOutPanel } from '../components/CheckOutPanel';
+import { StayDatesPanel } from '../components/StayDatesPanel';
 import { Icon } from '../components/Icon';
 
 function isoDate(d: Date): string {
@@ -58,6 +60,11 @@ export function Board() {
     occupant: BoardOccupant;
     runCode: string;
   } | null>(null);
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
+  const [editingDates, setEditingDates] = useState<{
+    occupant: BoardOccupant;
+    runLabel: string;
+  } | null>(null);
 
   const load = useCallback(() => {
     setError(null);
@@ -85,16 +92,9 @@ export function Board() {
       setCheckingIn({ occupant: o, runCode });
       return;
     }
-    if (!window.confirm(`Check out ${o.petName}?`)) return;
-    setBusy(o.bookingId);
-    try {
-      await checkOut(o.bookingId);
-      load();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(null);
-    }
+    // Check-out now settles the bill, so it opens the invoice rather than
+    // closing the stay behind a confirm dialog.
+    setCheckingOut(o.bookingId);
   };
 
   if (error) return <div className="hint error">Board failed to load: {error}</div>;
@@ -144,6 +144,21 @@ export function Board() {
           </button>
         </div>
       </div>
+      {checkingOut && (
+        <CheckOutPanel
+          bookingId={checkingOut}
+          onClose={() => setCheckingOut(null)}
+          onDone={load}
+        />
+      )}
+      {editingDates && (
+        <StayDatesPanel
+          occupant={editingDates.occupant}
+          runLabel={editingDates.runLabel}
+          onClose={() => setEditingDates(null)}
+          onSaved={load}
+        />
+      )}
       {checkingIn && (
         <CheckInPanel
           occupant={checkingIn.occupant}
@@ -234,15 +249,27 @@ export function Board() {
                               <b>{o.petName}</b>
                               <small>{occupantLine(o)}</small>
                             </Link>
-                            {action && (
-                              <button
-                                className="runact"
-                                disabled={busy === o.bookingId}
-                                onClick={() => act(o, cell.run.code)}
-                              >
-                                {busy === o.bookingId ? '…' : action}
-                              </button>
-                            )}
+                            <div className="runacts">
+                              {action && (
+                                <button
+                                  className="runact"
+                                  disabled={busy === o.bookingId}
+                                  onClick={() => act(o, cell.run.code)}
+                                >
+                                  {busy === o.bookingId ? '…' : action}
+                                </button>
+                              )}
+                              {o.status !== 'checked_out' && (
+                                <button
+                                  className="runact ghost"
+                                  onClick={() =>
+                                    setEditingDates({ occupant: o, runLabel: cell.run.label })
+                                  }
+                                >
+                                  Dates
+                                </button>
+                              )}
+                            </div>
                           </div>
                         );
                       })

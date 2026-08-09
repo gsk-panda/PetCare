@@ -70,6 +70,39 @@ retires — the board stops offering it while past stays still resolve. Only a
 record nothing depends on can be deleted outright, which keeps the audit trail
 whole. The same rule applies to play groups.
 
+## Pricing and check-out
+
+Rates live on the thing being sold: a per-night rate on each run type, a
+per-day rate on each play group, both editable in Settings. Extras (baths, nail
+trims) are offered at check-out.
+
+Check-out prices from the nights **actually stayed**, not the nights booked, so
+extending or shortening a stay bills what happened. Invoice, lines, payment,
+booking status and care event are written in one transaction, and the booking
+closes last so a failure never leaves a dog checked out with no invoice. A
+partial unique index allows one live invoice per booking, so a double
+check-out cannot bill twice.
+
+Stays can be extended or shortened from the board, including while the dog is
+in the kennel. The start date of a stay that has begun cannot move — the care
+log already recorded against it — and a change is refused when another dog is
+booked into that run for part of the new dates.
+
+### Card reader
+
+Stripe Terminal only. Square and Clover are refused rather than accepted and
+silently unsupported.
+
+The secret key comes from `STRIPE_SECRET_KEY` in the API environment and is
+deliberately **not** stored in a tenant schema — a key in a column is a key in
+every backup. Verifying calls Stripe and reports the locations and readers the
+account can see, so "connected" means a request actually succeeded rather than
+that someone typed something once.
+
+With no key configured the UI says so and card-reader payment is disabled;
+cash, cheque, keyed card and account credit still work. Driving a reader
+end-to-end additionally needs a real merchant account and a registered reader.
+
 ## Client portal
 
 `/portal` is the owner-facing app, mounted outside the staff shell with its own

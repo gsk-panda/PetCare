@@ -12,6 +12,12 @@ import {
 } from '../api';
 import { Icon } from './Icon';
 
+/** Dollars in the field, cents on the wire. */
+function toCents(v: string): number | null {
+  const n = Number(v.replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null;
+}
+
 /**
  * Kennel inventory. Retire and delete are deliberately different actions:
  * anything a dog has stayed in retires so past stays still resolve, while a
@@ -151,6 +157,23 @@ function RunTypeBlock({
           }}
         />
         <span className="pill neutral">{type.kind === 'suite' ? 'Suite' : 'Standard'}</span>
+        <label className="rate-inline">
+          <span>$</span>
+          <input
+            className="cell-input narrow"
+            defaultValue={(type.rateCents / 100).toFixed(2)}
+            readOnly={!canEdit}
+            inputMode="decimal"
+            aria-label={`Nightly rate for ${type.name}`}
+            onBlur={(e) => {
+              const cents = toCents(e.target.value);
+              if (cents !== null && cents !== type.rateCents) {
+                void run(type.id, () => updateRunType(type.id, { rateCents: cents }));
+              }
+            }}
+          />
+          <em>/ night</em>
+        </label>
         <span className="runtype-count">
           {type.activeRunCount} of {type.runCount} active
         </span>

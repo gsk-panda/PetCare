@@ -29,7 +29,7 @@ export async function runSettingsRoutes(app: FastifyInstance): Promise<void> {
     return withTenant(req.tenant.schemaName, async (db) => {
       const { rows: types } = await db.query(
         `SELECT t.id, t.name, t.zone_label, t.kind, t.default_capacity,
-                t.display_order, t.active,
+                t.display_order, t.active, t.rate_cents,
                 COUNT(r.id)::int AS run_count,
                 COUNT(r.id) FILTER (WHERE r.active)::int AS active_run_count
          FROM run_types t
@@ -57,6 +57,7 @@ export async function runSettingsRoutes(app: FastifyInstance): Promise<void> {
           zoneLabel: t.zone_label,
           kind: t.kind,
           defaultCapacity: t.default_capacity,
+          rateCents: t.rate_cents,
           displayOrder: t.display_order,
           active: t.active,
           runCount: t.run_count,
@@ -106,9 +107,16 @@ export async function runSettingsRoutes(app: FastifyInstance): Promise<void> {
 
   app.patch<{
     Params: { typeId: string };
-    Body: { name?: string; zoneLabel?: string; defaultCapacity?: number; active?: boolean };
+    Body: {
+      name?: string; zoneLabel?: string; defaultCapacity?: number;
+      active?: boolean; rateCents?: number;
+    };
   }>('/settings/run-types/:typeId', { preHandler: requireManager }, async (req, reply) => {
     const b = req.body ?? {};
+    if (b.rateCents !== undefined &&
+        (!Number.isInteger(b.rateCents) || b.rateCents < 0 || b.rateCents > 1_000_000)) {
+      return reply.code(400).send({ error: 'Nightly rate must be between $0 and $10,000' });
+    }
     if (b.name !== undefined && !b.name.trim()) {
       return reply.code(400).send({ error: 'Name cannot be empty' });
     }
@@ -139,12 +147,13 @@ export async function runSettingsRoutes(app: FastifyInstance): Promise<void> {
            name = COALESCE($2, name),
            zone_label = COALESCE($3, zone_label),
            default_capacity = COALESCE($4, default_capacity),
-           active = COALESCE($5, active)
+           active = COALESCE($5, active),
+           rate_cents = COALESCE($6, rate_cents)
          WHERE id = $1
          RETURNING id, zone_label, active`,
         [
           req.params.typeId, b.name?.trim() ?? null, b.zoneLabel?.trim() ?? null,
-          b.defaultCapacity ?? null, b.active ?? null,
+          b.defaultCapacity ?? null, b.active ?? null, b.rateCents ?? null,
         ],
       );
       if (!rows[0]) return reply.code(404).send({ error: 'Run type not found' });

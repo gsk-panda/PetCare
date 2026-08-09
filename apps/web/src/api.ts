@@ -157,6 +157,8 @@ export interface PlayGroupSetting extends PlayGroup {
   displayOrder: number;
   active: boolean;
   bookedToday: number;
+  /** Daily rate in cents. */
+  rateCents: number;
 }
 
 export const fetchPlayGroups = () =>
@@ -184,7 +186,7 @@ export const createPlayGroup = (body: { label: string; capacity: number }) =>
 
 export const updatePlayGroup = (
   groupId: string,
-  body: { label?: string; capacity?: number; active?: boolean },
+  body: { label?: string; capacity?: number; active?: boolean; rateCents?: number },
 ) => send<PlayGroupSetting>(`/settings/play-groups/${groupId}`, 'PATCH', body);
 
 export interface RunSetting {
@@ -202,6 +204,8 @@ export interface RunTypeSetting {
   zoneLabel: string;
   kind: 'suite' | 'run';
   defaultCapacity: number;
+  /** Nightly rate in cents. */
+  rateCents: number;
   displayOrder: number;
   active: boolean;
   runCount: number;
@@ -221,7 +225,13 @@ export const createRunType = (body: {
 
 export const updateRunType = (
   typeId: string,
-  body: { name?: string; zoneLabel?: string; defaultCapacity?: number; active?: boolean },
+  body: {
+    name?: string;
+    zoneLabel?: string;
+    defaultCapacity?: number;
+    active?: boolean;
+    rateCents?: number;
+  },
 ) => send<{ ok: boolean }>(`/settings/run-types/${typeId}`, 'PATCH', body);
 
 export const deleteRunType = (typeId: string) =>
@@ -241,6 +251,116 @@ export const updateRun = (
 
 export const deleteRun = (runId: string) =>
   send<{ ok: boolean }>(`/settings/runs/${runId}`, 'DELETE', undefined);
+
+/* ---------------------------- billing ---------------------------- */
+export interface ServiceItem {
+  id: string;
+  name: string;
+  description: string | null;
+  priceCents: number;
+  taxable: boolean;
+  active: boolean;
+}
+
+export interface BillingSettings {
+  currency: string;
+  taxRateBps: number;
+  terminal: {
+    provider: string | null;
+    label: string | null;
+    location: string | null;
+    status: 'not_connected' | 'pending' | 'connected';
+    stripeConfigured: boolean;
+  };
+  serviceItems: ServiceItem[];
+}
+
+export interface StripeVerifyResult {
+  ok: boolean;
+  account?: { id: string; name: string | null; livemode: boolean };
+  locations?: Array<{
+    id: string;
+    label: string;
+    readers: Array<{ id: string; label: string; status: string }>;
+  }>;
+}
+
+export const fetchBillingSettings = () =>
+  get<BillingSettings>(`/api/${TENANT_SLUG}/settings/billing`);
+
+export const updateBillingSettings = (body: {
+  taxRateBps?: number;
+  terminalProvider?: string | null;
+  terminalLabel?: string;
+  terminalLocation?: string;
+}) => send<{ ok: boolean }>('/settings/billing', 'PATCH', body);
+
+export const verifyStripeTerminal = () =>
+  send<StripeVerifyResult>('/settings/billing/stripe/verify', 'POST', {});
+
+export const createServiceItem = (body: {
+  name: string;
+  description?: string;
+  priceCents: number;
+}) => send<{ id: string }>('/settings/service-items', 'POST', body);
+
+export const updateServiceItem = (
+  itemId: string,
+  body: { name?: string; priceCents?: number; active?: boolean },
+) => send<{ ok: boolean }>(`/settings/service-items/${itemId}`, 'PATCH', body);
+
+/* ---------------------------- stays ---------------------------- */
+export const changeStayDates = (
+  bookingId: string,
+  body: { startDate?: string; endDate?: string },
+) => send<{ startDate: string; endDate: string }>(`/bookings/${bookingId}/dates`, 'PATCH', body);
+
+export interface QuoteLine {
+  kind: 'boarding' | 'daycare' | 'service' | 'adjustment';
+  description: string;
+  quantity: number;
+  unitCents: number;
+  amountCents: number;
+  taxable: boolean;
+}
+
+export interface CheckoutQuote {
+  bookingId: string;
+  petName: string;
+  clientName: string;
+  serviceType: 'boarding' | 'daycare';
+  startDate: string;
+  endDate: string;
+  nights: number;
+  runLabel: string;
+  taxRateBps: number;
+  lines: QuoteLine[];
+  subtotalCents: number;
+  taxCents: number;
+  totalCents: number;
+}
+
+export const fetchCheckoutQuote = (bookingId: string) =>
+  get<CheckoutQuote>(`/api/${TENANT_SLUG}/bookings/${bookingId}/checkout-quote`);
+
+export const completeCheckout = (
+  bookingId: string,
+  body: {
+    serviceItemIds?: string[];
+    adjustmentCents?: number;
+    adjustmentNote?: string;
+    payment?: { method: string; amountCents: number; reference?: string };
+    note?: string;
+  },
+) =>
+  send<{
+    invoiceId: string;
+    subtotalCents: number;
+    taxCents: number;
+    totalCents: number;
+    paidCents: number;
+    balanceCents: number;
+  }>(`/bookings/${bookingId}/checkout`, 'POST', body);
 
 export const fetchCalendar = (from: string, to: string) =>
   get<CalendarResponse>(`/api/${TENANT_SLUG}/calendar?from=${from}&to=${to}`);

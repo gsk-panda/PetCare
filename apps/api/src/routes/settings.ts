@@ -27,7 +27,7 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
   app.get('/settings/play-groups', async (req) => {
     return withTenant(req.tenant.schemaName, async (db) => {
       const { rows } = await db.query(
-        `SELECT r.id, r.code, r.label, r.capacity, r.display_order, r.active,
+        `SELECT r.id, r.code, r.label, r.capacity, r.display_order, r.active, r.rate_cents,
                 COUNT(b.id) FILTER (
                   WHERE b.status IN ('confirmed', 'checked_in')
                     AND b.start_date = CURRENT_DATE
@@ -45,6 +45,7 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
           label: g.label ?? g.code,
           capacity: g.capacity,
           displayOrder: g.display_order,
+          rateCents: g.rate_cents,
           active: g.active,
           bookedToday: g.today,
         })),
@@ -91,9 +92,13 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
 
   app.patch<{
     Params: { groupId: string };
-    Body: { label?: string; capacity?: number; active?: boolean };
+    Body: { label?: string; capacity?: number; active?: boolean; rateCents?: number };
   }>('/settings/play-groups/:groupId', { preHandler: requireManager }, async (req, reply) => {
-    const { label, capacity, active } = req.body ?? {};
+    const { label, capacity, active, rateCents } = req.body ?? {};
+    if (rateCents !== undefined &&
+        (!Number.isInteger(rateCents) || rateCents < 0 || rateCents > 1_000_000)) {
+      return reply.code(400).send({ error: 'Daily rate must be between $0 and $10,000' });
+    }
     if (capacity !== undefined && (!Number.isInteger(capacity) || capacity < 1 || capacity > 200)) {
       return reply.code(400).send({ error: 'capacity must be a whole number from 1 to 200' });
     }
@@ -122,10 +127,11 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
         `UPDATE runs SET
            label = COALESCE($2, label),
            capacity = COALESCE($3, capacity),
-           active = COALESCE($4, active)
+           active = COALESCE($4, active),
+           rate_cents = COALESCE($5, rate_cents)
          WHERE id = $1 AND kind = 'playgroup'
          RETURNING id, code, label, capacity, active`,
-        [req.params.groupId, label?.trim() ?? null, capacity ?? null, active ?? null],
+        [req.params.groupId, label?.trim() ?? null, capacity ?? null, active ?? null, rateCents ?? null],
       );
       if (!rows[0]) return reply.code(404).send({ error: 'Play group not found' });
       return {

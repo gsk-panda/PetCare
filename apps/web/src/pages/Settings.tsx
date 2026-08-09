@@ -7,6 +7,7 @@ import {
 } from '../api';
 import { Icon } from '../components/Icon';
 import { KennelRuns } from '../components/KennelRuns';
+import { BillingSettings } from '../components/BillingSettings';
 import { canManageSettings, useStaff } from '../staff-context';
 
 export function Settings() {
@@ -82,6 +83,8 @@ export function Settings() {
 
         <KennelRuns onError={setError} canEdit={canEdit} />
 
+        <BillingSettings onError={setError} canEdit={canEdit} />
+
         <div className="card">
           <div className="hd">
             <b>Daycare play groups</b>
@@ -149,6 +152,7 @@ export function Settings() {
                 <tr>
                   <th>Group</th>
                   <th>Capacity</th>
+                  <th>Rate / day</th>
                   <th>Booked today</th>
                   <th />
                 </tr>
@@ -184,6 +188,23 @@ export function Settings() {
                           if (Number.isInteger(v) && v !== g.capacity) patch(g, { capacity: v });
                         }}
                       />
+                    </td>
+                    <td>
+                      <label className="rate-inline">
+                        <span>$</span>
+                        <input
+                          className="cell-input narrow"
+                          defaultValue={(g.rateCents / 100).toFixed(2)}
+                          readOnly={!canEdit}
+                          inputMode="decimal"
+                          aria-label={`Daily rate for ${g.label}`}
+                          onBlur={(e) => {
+                            const n = Number(e.target.value.replace(/[^0-9.]/g, ''));
+                            const cents = Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null;
+                            if (cents !== null && cents !== g.rateCents) patch(g, { rateCents: cents });
+                          }}
+                        />
+                      </label>
                     </td>
                     <td>
                       {g.bookedToday} / {g.capacity}
