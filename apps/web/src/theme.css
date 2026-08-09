@@ -677,6 +677,17 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 }
 .ok-note { color: var(--good); font-weight: 600; }
 
+.prefill-note {
+  display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
+  background: var(--info-bg); border: 1px solid #c2d6ea;
+  border-radius: var(--r-md); padding: var(--s-3);
+}
+.prefill-note.done { background: var(--good-bg); border-color: #bfdcc9; }
+.prefill-note > div { flex: 1; min-width: 0; }
+.prefill-note b { display: block; font-size: var(--t-sm); font-weight: 650; color: var(--info); }
+.prefill-note.done b { color: var(--good); }
+.prefill-note small { display: block; font-size: var(--t-xs); color: var(--ink-2); margin-top: 2px; }
+
 /* ---- Rates & billing ---- */
 .rate-inline { display: inline-flex; align-items: center; gap: 3px; }
 .rate-inline > span { font-size: var(--t-sm); color: var(--ink-3); font-weight: 650; }

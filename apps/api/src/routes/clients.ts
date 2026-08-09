@@ -56,6 +56,71 @@ export async function clientRoutes(app: FastifyInstance): Promise<void> {
     });
   });
 
+  /**
+   * What this pet arrived with last time. A regular turns up with the same bed
+   * and the same food, so the desk should be confirming last time's answers
+   * rather than retyping them at every drop-off.
+   */
+  app.get<{ Params: { petId: string } }>('/pets/:petId/previous-stay', async (req, reply) => {
+    return withTenant(req.tenant.schemaName, async (db) => {
+      const { rows } = await db.query(
+        `SELECT b.id, b.start_date::text AS start_date, b.end_date::text AS end_date,
+                i.belongings, i.collar_type, i.food_source, i.food_description,
+                i.feeding_amount, i.feeding_times, i.bowl_type,
+                i.treats_allowed, i.treats_notes, i.bones_allowed, i.bones_notes
+         FROM bookings b
+         JOIN stay_intake i ON i.booking_id = b.id
+         WHERE b.pet_id = $1 AND b.status = 'checked_out'
+         ORDER BY b.start_date DESC
+         LIMIT 1`,
+        [req.params.petId],
+      );
+      const prev = rows[0];
+      if (!prev) return reply.code(404).send({ error: 'No previous stay on file' });
+
+      const { rows: meds } = await db.query(
+        `SELECT name, dose, schedule, with_food, notes
+         FROM stay_medications WHERE booking_id = $1 ORDER BY created_at`,
+        [prev.id],
+      );
+      const { rows: services } = await db.query(
+        `SELECT name, unit_cents, quantity, service_item_id
+         FROM booking_services WHERE booking_id = $1 ORDER BY created_at`,
+        [prev.id],
+      );
+
+      return {
+        stayDates: { startDate: prev.start_date, endDate: prev.end_date },
+        intake: {
+          belongings: prev.belongings,
+          collarType: prev.collar_type,
+          foodSource: prev.food_source,
+          foodDescription: prev.food_description,
+          feedingAmount: prev.feeding_amount,
+          feedingTimes: prev.feeding_times ?? [],
+          bowlType: prev.bowl_type,
+          treatsAllowed: prev.treats_allowed,
+          treatsNotes: prev.treats_notes,
+          bonesAllowed: prev.bones_allowed,
+          bonesNotes: prev.bones_notes,
+        },
+        medications: meds.map((m) => ({
+          name: m.name,
+          dose: m.dose,
+          schedule: m.schedule,
+          withFood: m.with_food,
+          notes: m.notes,
+        })),
+        services: services.map((s) => ({
+          serviceItemId: s.service_item_id,
+          name: s.name,
+          unitCents: s.unit_cents,
+          quantity: s.quantity,
+        })),
+      };
+    });
+  });
+
   app.get<{ Params: { petId: string } }>('/pets/:petId', async (req, reply) => {
     return withTenant(req.tenant.schemaName, async (db) => {
       const { rows } = await db.query(

@@ -595,12 +595,54 @@ export interface StayIntake {
   medications?: StayMedication[];
 }
 
+export interface PreviousStay {
+  stayDates: { startDate: string; endDate: string };
+  intake: {
+    belongings: string | null;
+    collarType: string | null;
+    foodSource: 'owner' | 'house' | null;
+    foodDescription: string | null;
+    feedingAmount: string | null;
+    feedingTimes: string[];
+    bowlType: string | null;
+    treatsAllowed: boolean;
+    treatsNotes: string | null;
+    bonesAllowed: boolean;
+    bonesNotes: string | null;
+  };
+  medications: Array<{
+    name: string;
+    dose: string | null;
+    schedule: string;
+    withFood: boolean;
+    notes: string | null;
+  }>;
+  services: Array<{
+    serviceItemId: string | null;
+    name: string;
+    unitCents: number;
+    quantity: number;
+  }>;
+}
+
+/** Resolves to null when this is the pet's first stay. */
+export async function fetchPreviousStay(petId: string): Promise<PreviousStay | null> {
+  const res = await fetch(`/api/${TENANT_SLUG}/pets/${petId}/previous-stay`, {
+    credentials: 'include',
+  });
+  if (res.status === 404) return null;
+  if (res.status === 401) throw new StaffAuthError();
+  if (!res.ok) throw new Error(`Could not load the previous stay (${res.status})`);
+  return (await res.json()) as PreviousStay;
+}
+
 export interface CheckInChecklist {
   feedingConfirmed?: boolean;
   medsConfirmed?: boolean;
   vaccinesVerified?: boolean;
   signatureCaptured?: boolean;
   intake?: StayIntake;
+  serviceItemIds?: string[];
 }
 
 export async function checkIn(

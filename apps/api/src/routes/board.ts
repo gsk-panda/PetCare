@@ -31,6 +31,8 @@ interface CheckInBody {
   medsConfirmed?: boolean;
   signatureCaptured?: boolean;
   intake?: StayIntakeInput;
+  /** Extras agreed at drop-off; billed at check-out. */
+  serviceItemIds?: string[];
 }
 
 interface BoardRow {
@@ -174,6 +176,9 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
       confirmed.length ? `Checklist: ${confirmed.join(', ')}.` : null,
       intake?.belongings?.trim() ? `Belongings: ${intake.belongings.trim()}.` : null,
       meds.length ? `${meds.length} medication${meds.length === 1 ? '' : 's'} scheduled.` : null,
+      b.serviceItemIds?.length
+        ? `${b.serviceItemIds.length} extra${b.serviceItemIds.length === 1 ? '' : 's'} booked.`
+        : null,
     ].filter(Boolean);
 
     return withTenant(req.tenant.schemaName, async (db) => {
@@ -237,6 +242,21 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
               b.staffName ?? null,
             ],
           );
+
+          // Snapshot name and price so a later price change in Settings does
+          // not silently re-price what the owner was quoted at the door.
+          const wanted = b.serviceItemIds ?? [];
+          await db.query('DELETE FROM booking_services WHERE booking_id = $1', [rows[0].id]);
+          if (wanted.length > 0) {
+            await db.query(
+              `INSERT INTO booking_services
+                 (booking_id, service_item_id, name, unit_cents, taxable, added_by)
+               SELECT $1, si.id, si.name, si.price_cents, si.taxable, $3
+               FROM service_items si
+               WHERE si.id = ANY($2) AND si.active`,
+              [rows[0].id, wanted, req.staff.id],
+            );
+          }
 
           await db.query('DELETE FROM stay_medications WHERE booking_id = $1', [rows[0].id]);
           for (const m of meds) {

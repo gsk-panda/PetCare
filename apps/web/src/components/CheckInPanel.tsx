@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   checkIn,
+  fetchBillingSettings,
   fetchPet,
+  fetchPreviousStay,
   type BoardOccupant,
   type PetProfile,
+  type PreviousStay,
+  type ServiceItem,
   type StayMedication,
 } from '../api';
+import { money } from './CheckOutPanel';
 import { Icon } from './Icon';
 
 const DAY_MS = 86_400_000;
@@ -80,6 +85,10 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
   const [bonesNotes, setBonesNotes] = useState('');
   const [needsMeds, setNeedsMeds] = useState(false);
   const [meds, setMeds] = useState<StayMedication[]>([]);
+  const [services, setServices] = useState<string[]>([]);
+  const [catalogue, setCatalogue] = useState<ServiceItem[]>([]);
+  const [previous, setPrevious] = useState<PreviousStay | null>(null);
+  const [prefilled, setPrefilled] = useState(false);
 
   useEffect(() => {
     fetchPet(occupant.petId)
@@ -96,10 +105,49 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
   }, [occupant.petId]);
 
   useEffect(() => {
+    fetchBillingSettings()
+      .then((b) => setCatalogue(b.serviceItems.filter((i) => i.active)))
+      .catch(() => setCatalogue([]));
+    // Offered, not applied: the desk confirms with the owner that nothing has
+    // changed since last time rather than inheriting stale answers silently.
+    fetchPreviousStay(occupant.petId)
+      .then(setPrevious)
+      .catch(() => setPrevious(null));
+  }, [occupant.petId]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  const applyPrevious = () => {
+    if (!previous) return;
+    const p = previous.intake;
+    const known = new Set(BELONGING_PRESETS.map((b) => b.toLowerCase()));
+    const parts = (p.belongings ?? '').split(/\s*·\s*|\s*,\s*/).filter(Boolean);
+    setBelongings(parts.filter((x) => known.has(x.toLowerCase())));
+    setBelongingsNote(parts.filter((x) => !known.has(x.toLowerCase())).join(' · '));
+    if (p.collarType) setCollarType(p.collarType);
+    if (p.foodSource) setFoodSource(p.foodSource);
+    if (p.foodDescription) setFoodDescription(p.foodDescription);
+    if (p.feedingAmount) setFeedingAmount(p.feedingAmount);
+    if (p.feedingTimes.length) setFeedingTimes(p.feedingTimes);
+    if (p.bowlType) setBowlType(p.bowlType);
+    setTreatsAllowed(p.treatsAllowed);
+    setTreatsNotes(p.treatsNotes ?? '');
+    setBonesAllowed(p.bonesAllowed);
+    setBonesNotes(p.bonesNotes ?? '');
+    if (previous.medications.length > 0) {
+      setNeedsMeds(true);
+      setMeds(previous.medications.map((m) => ({ ...m, dose: m.dose ?? '', notes: m.notes ?? '' })));
+    }
+    const repeatable = previous.services
+      .map((s) => s.serviceItemId)
+      .filter((id): id is string => Boolean(id) && catalogue.some((c) => c.id === id));
+    if (repeatable.length) setServices(repeatable);
+    setPrefilled(true);
+  };
 
   const toggle = (list: string[], value: string) =>
     list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
@@ -146,6 +194,7 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
         feedingConfirmed,
         medsConfirmed,
         signatureCaptured,
+        serviceItemIds: services,
         intake: {
           belongings: belongingsText || undefined,
           collarType,
@@ -268,6 +317,27 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
                   </small>
                 </span>
               </label>
+
+              {previous && (
+                <div className={prefilled ? 'prefill-note done' : 'prefill-note'}>
+                  <div>
+                    <b>
+                      {prefilled
+                        ? "Filled from their last stay — check it still applies"
+                        : 'This pet has stayed before'}
+                    </b>
+                    <small>
+                      {previous.stayDates.startDate} → {previous.stayDates.endDate}
+                      {previous.intake.belongings ? ` · ${previous.intake.belongings}` : ''}
+                    </small>
+                  </div>
+                  {!prefilled && (
+                    <button type="button" className="btn ghost" onClick={applyPrevious}>
+                      Use last stay
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* --- Belongings -------------------------------------------- */}
               <fieldset className="intake">
@@ -521,6 +591,47 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
                         </small>
                       </span>
                     </label>
+                  </>
+                )}
+              </fieldset>
+
+              {/* --- Extras ------------------------------------------------ */}
+              <fieldset className="intake">
+                <legend>Services for this stay</legend>
+                {catalogue.length === 0 ? (
+                  <p className="field-note">
+                    No services set up yet. Add them under Pricing in Settings and they will
+                    appear here.
+                  </p>
+                ) : (
+                  <>
+                    <div className="chipset">
+                      {catalogue.map((i) => (
+                        <button
+                          key={i.id}
+                          type="button"
+                          className={services.includes(i.id) ? 'chip on' : 'chip'}
+                          onClick={() =>
+                            setServices((prev) =>
+                              prev.includes(i.id)
+                                ? prev.filter((x) => x !== i.id)
+                                : [...prev, i.id],
+                            )
+                          }
+                        >
+                          {i.name} · {money(i.priceCents)}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="field-note">
+                      {services.length === 0
+                        ? 'Anything agreed at drop-off. Added to the bill at check-out.'
+                        : `${money(
+                            catalogue
+                              .filter((i) => services.includes(i.id))
+                              .reduce((n, i) => n + i.priceCents, 0),
+                          )} added to this stay, billed at check-out.`}
+                    </p>
                   </>
                 )}
               </fieldset>

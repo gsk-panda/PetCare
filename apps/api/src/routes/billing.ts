@@ -452,6 +452,24 @@ async function buildQuote(
     });
   }
 
+  // Extras agreed at drop-off, at the price quoted then rather than today's.
+  const { rows: agreed } = await db.query(
+    `SELECT name, unit_cents, quantity, taxable FROM booking_services
+     WHERE booking_id = $1 ORDER BY created_at`,
+    [bookingId],
+  );
+  for (const s of agreed) {
+    lines.push({
+      kind: 'service',
+      description: s.name,
+      quantity: s.quantity,
+      unitCents: s.unit_cents,
+      amountCents: s.unit_cents * s.quantity,
+      taxable: s.taxable,
+    });
+  }
+
+  // Anything added at the till on top.
   if (serviceItemIds.length > 0) {
     const { rows: items } = await db.query(
       `SELECT id, name, price_cents, taxable FROM service_items
