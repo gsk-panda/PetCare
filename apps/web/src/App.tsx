@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { fetchStaffMe, fetchTenantMeta, type StaffUser, type TenantMeta } from './api';
 import { Shell } from './components/Shell';
 import { StaffSignIn } from './components/StaffSignIn';
+import { StaffContext } from './staff-context';
 import { Dashboard } from './pages/Dashboard';
 import { Board } from './pages/Board';
 import { Clients } from './pages/Clients';
@@ -70,6 +71,7 @@ function StaffApp({ tenant }: { tenant: TenantMeta }) {
   }
 
   return (
+    <StaffContext.Provider value={staff}>
     <Shell tenant={tenant} staff={staff} onSignedOut={() => setStaff(null)}>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -85,5 +87,6 @@ function StaffApp({ tenant }: { tenant: TenantMeta }) {
         <Route path="/pets/:petId" element={<PetProfile />} />
       </Routes>
     </Shell>
+    </StaffContext.Provider>
   );
 }

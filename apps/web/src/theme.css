@@ -648,6 +648,57 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .cell-input:hover { border-color: var(--line); background: var(--surface); }
 .cell-input:focus-visible { outline: none; border-color: var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-tint); }
 .cell-input.narrow { max-width: 92px; }
+.readonly-note {
+  background: var(--info-bg); border: 1px solid #c2d6ea; border-radius: var(--r-lg);
+  padding: var(--s-3) var(--s-4);
+}
+.readonly-note b { display: block; font-size: var(--t-sm); font-weight: 650; color: var(--info); }
+.readonly-note small { display: block; font-size: var(--t-xs); color: var(--ink-2); margin-top: 2px; }
+.cell-input[readonly] { cursor: default; }
+.cell-input[readonly]:hover { border-color: transparent; background: transparent; }
+
+/* ---- Kennel runs ---- */
+.setting-note.plain { border-bottom: none; padding-top: 0; }
+.btn.ghost.danger { color: var(--bad); }
+.btn.ghost.danger:hover { background: var(--bad-bg); box-shadow: inset 0 0 0 1px var(--bad); }
+.show-retired { margin: var(--s-3) var(--s-4) var(--s-4); align-self: flex-start; }
+
+.runtype { border-top: 1px solid var(--line); padding: var(--s-3) var(--s-4) var(--s-4); }
+.runtype.retired { background: var(--surface-2); }
+.runtype-hd { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; margin-bottom: var(--s-3); }
+.runtype-hd .cell-input { max-width: 260px; font-size: var(--t-base); font-weight: 650; }
+.runtype-count { font-size: var(--t-xs); color: var(--ink-3); font-weight: 600; }
+.runtype-actions { margin-left: auto; display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.runtype-actions .btn { padding: 5px 11px; font-size: var(--t-xs); }
+
+.rungrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.runchip {
+  position: relative; display: flex; align-items: center; gap: 5px;
+  border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--surface); padding: 5px 8px; min-height: 34px;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.runchip:hover { border-color: var(--line-strong); }
+.runchip.retired { background: var(--surface-2); opacity: 0.65; border-style: dashed; }
+.runchip.editing { padding: 2px 4px; }
+.runchip-code { font-size: var(--t-sm); font-weight: 650; letter-spacing: 0.02em; }
+.runchip-code:hover { color: var(--brand); text-decoration: underline; }
+.runchip em { font-style: normal; font-size: var(--t-3xs); color: var(--ink-3); font-weight: 700; }
+.runchip-dot {
+  width: 6px; height: 6px; border-radius: var(--r-pill); background: var(--good); flex-shrink: 0;
+}
+.runchip-menu {
+  position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+  gap: var(--s-2); background: var(--surface); border-radius: var(--r-md);
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+.runchip:hover .runchip-menu, .runchip:focus-within .runchip-menu { display: flex; }
+.runchip-menu button { font-size: var(--t-3xs); font-weight: 700; color: var(--brand); }
+.runchip-menu button:hover { text-decoration: underline; }
+.runchip-menu button.danger { color: var(--bad); }
+.runchip-menu button:disabled { opacity: 0.5; }
+.field-note.wide { flex-basis: 100%; margin: 0; }
+
 .code-hint {
   display: block; font-size: var(--t-3xs); color: var(--ink-3);
   letter-spacing: 0.05em; padding-left: 7px; font-weight: 650;

@@ -6,11 +6,14 @@ import {
   type PlayGroupSetting,
 } from '../api';
 import { Icon } from '../components/Icon';
+import { KennelRuns } from '../components/KennelRuns';
+import { canManageSettings, useStaff } from '../staff-context';
 
 export function Settings() {
   const [groups, setGroups] = useState<PlayGroupSetting[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const canEdit = canManageSettings(useStaff());
   const [adding, setAdding] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newCapacity, setNewCapacity] = useState('12');
@@ -66,6 +69,18 @@ export function Settings() {
 
       <div className="content">
         {error && <div className="form-error">{error}</div>}
+
+        {!canEdit && (
+          <div className="readonly-note">
+            <b>You're viewing settings read-only</b>
+            <small>
+              Changing how the facility is set up is an owner or manager job. Ask one of them
+              if something here needs to change.
+            </small>
+          </div>
+        )}
+
+        <KennelRuns onError={setError} canEdit={canEdit} />
 
         <div className="card">
           <div className="hd">

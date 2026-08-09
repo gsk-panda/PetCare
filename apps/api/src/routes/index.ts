@@ -9,6 +9,7 @@ import { runRoutes } from './runs.js';
 import { careRoutes } from './care.js';
 import { alertRoutes } from './alerts.js';
 import { settingsRoutes } from './settings.js';
+import { runSettingsRoutes } from './run-settings.js';
 import { portalRoutes } from './portal.js';
 import { staffAuthRoutes } from './staff.js';
 import { readStaffCookie, resolveStaff, type StaffSession } from '../staff-auth.js';
@@ -71,4 +72,5 @@ async function protectedStaffRoutes(app: FastifyInstance): Promise<void> {
   await app.register(careRoutes);
   await app.register(alertRoutes);
   await app.register(settingsRoutes);
+  await app.register(runSettingsRoutes);
 }

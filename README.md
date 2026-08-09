@@ -55,6 +55,21 @@ The panel prefills from the profile so the desk edits rather than retypes, and
 the pet profile shows both, side by side. Check-in writes the booking status,
 the care event, the intake row and the medication rows in one transaction.
 
+## Facility configuration
+
+Settings is owner/manager only. Other signed-in roles see it read-only — the
+nav hides the link, the page drops every edit control, and the API refuses the
+writes regardless, so the UI is never the only guard.
+
+**Kennel runs.** A run type is a class of accommodation (a wing of suites, a
+block of standard runs); runs live inside a type. Runs can be added one at a
+time or as a numbered series, so standing up a new wing is one action.
+
+**Retire and delete are different on purpose.** Anything with booking history
+retires — the board stops offering it while past stays still resolve. Only a
+record nothing depends on can be deleted outright, which keeps the audit trail
+whole. The same rule applies to play groups.
+
 ## Client portal
 
 `/portal` is the owner-facing app, mounted outside the staff shell with its own

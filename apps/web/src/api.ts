@@ -152,11 +152,14 @@ export const fetchPlayGroups = () =>
   get<{ groups: PlayGroupSetting[] }>(`/api/${TENANT_SLUG}/settings/play-groups`);
 
 async function send<T>(path: string, method: string, body: unknown): Promise<T> {
+  // Fastify rejects a JSON content-type with an empty body, so a bodyless
+  // request (DELETE) must send neither.
   const res = await fetch(`/api/${TENANT_SLUG}${path}`, {
     method,
     credentials: 'include',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    ...(body === undefined
+      ? {}
+      : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
   });
   if (!res.ok) {
     const parsed = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -172,6 +175,61 @@ export const updatePlayGroup = (
   groupId: string,
   body: { label?: string; capacity?: number; active?: boolean },
 ) => send<PlayGroupSetting>(`/settings/play-groups/${groupId}`, 'PATCH', body);
+
+export interface RunSetting {
+  id: string;
+  code: string;
+  capacity: number;
+  active: boolean;
+  hasHistory: boolean;
+  inUse: boolean;
+}
+
+export interface RunTypeSetting {
+  id: string;
+  name: string;
+  zoneLabel: string;
+  kind: 'suite' | 'run';
+  defaultCapacity: number;
+  displayOrder: number;
+  active: boolean;
+  runCount: number;
+  activeRunCount: number;
+  runs: RunSetting[];
+}
+
+export const fetchRunTypes = () =>
+  get<{ types: RunTypeSetting[] }>(`/api/${TENANT_SLUG}/settings/run-types`);
+
+export const createRunType = (body: {
+  name: string;
+  zoneLabel?: string;
+  kind: 'suite' | 'run';
+  defaultCapacity: number;
+}) => send<{ id: string }>('/settings/run-types', 'POST', body);
+
+export const updateRunType = (
+  typeId: string,
+  body: { name?: string; zoneLabel?: string; defaultCapacity?: number; active?: boolean },
+) => send<{ ok: boolean }>(`/settings/run-types/${typeId}`, 'PATCH', body);
+
+export const deleteRunType = (typeId: string) =>
+  send<{ ok: boolean }>(`/settings/run-types/${typeId}`, 'DELETE', undefined);
+
+export const createRuns = (body: {
+  runTypeId: string;
+  code: string;
+  count?: number;
+  capacity?: number;
+}) => send<{ created: number; codes: string[] }>('/settings/runs', 'POST', body);
+
+export const updateRun = (
+  runId: string,
+  body: { code?: string; capacity?: number; active?: boolean },
+) => send<{ ok: boolean }>(`/settings/runs/${runId}`, 'PATCH', body);
+
+export const deleteRun = (runId: string) =>
+  send<{ ok: boolean }>(`/settings/runs/${runId}`, 'DELETE', undefined);
 
 export const fetchCalendar = (from: string, to: string) =>
   get<CalendarResponse>(`/api/${TENANT_SLUG}/calendar?from=${from}&to=${to}`);
