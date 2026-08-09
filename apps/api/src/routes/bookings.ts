@@ -39,6 +39,91 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
     });
   });
 
+  /**
+   * Extend or shorten a stay. A dog already in the kennel is the common case —
+   * the owner's flight moved — so this works on checked-in stays too, and only
+   * refuses when the run is genuinely needed by someone else.
+   */
+  app.patch<{
+    Params: { bookingId: string };
+    Body: { startDate?: string; endDate?: string; notes?: string };
+  }>('/bookings/:bookingId/dates', async (req, reply) => {
+    const { startDate, endDate, notes } = req.body ?? {};
+    const iso = /^\d{4}-\d{2}-\d{2}$/;
+
+    return withTenant(req.tenant.schemaName, async (db) => {
+      const { rows: current } = await db.query(
+        `SELECT id, service_type, status, run_id,
+                start_date::text AS start_date, end_date::text AS end_date
+         FROM bookings WHERE id = $1`,
+        [req.params.bookingId],
+      );
+      const booking = current[0];
+      if (!booking) return reply.code(404).send({ error: 'Booking not found' });
+      if (booking.status === 'canceled' || booking.status === 'checked_out') {
+        return reply.code(409).send({ error: 'This stay is already closed' });
+      }
+
+      const nextStart = startDate ?? booking.start_date;
+      const nextEnd = endDate ?? booking.end_date;
+      if (!iso.test(nextStart) || !iso.test(nextEnd)) {
+        return reply.code(400).send({ error: 'Dates must be YYYY-MM-DD' });
+      }
+      if (nextEnd < nextStart) {
+        return reply.code(400).send({ error: 'Check-out cannot be before check-in' });
+      }
+      if (booking.service_type === 'boarding' && nextEnd === nextStart) {
+        return reply.code(400).send({ error: 'A boarding stay needs at least one night' });
+      }
+      if (booking.service_type === 'daycare' && nextEnd !== nextStart) {
+        return reply.code(400).send({ error: 'Daycare is a single day' });
+      }
+      // Moving the start of a stay that has already begun would rewrite
+      // history the care log already recorded against.
+      if (booking.status === 'checked_in' && nextStart !== booking.start_date) {
+        return reply.code(409).send({
+          error: 'This stay has already started, so only the check-out date can change',
+        });
+      }
+
+      if (booking.run_id && booking.service_type === 'boarding') {
+        const { rows: clash } = await db.query(
+          `SELECT p.name FROM bookings b JOIN pets p ON p.id = b.pet_id
+           WHERE b.run_id = $1 AND b.id <> $2 AND b.service_type = 'boarding'
+             AND b.status IN ('requested', 'confirmed', 'checked_in')
+             AND b.start_date < $4::date AND b.end_date > $3::date
+           LIMIT 1`,
+          [booking.run_id, booking.id, nextStart, nextEnd],
+        );
+        if (clash[0]) {
+          return reply.code(409).send({
+            error: `${clash[0].name} is booked into that run for part of those dates. Move one of them first.`,
+          });
+        }
+      }
+
+      const { rows } = await db.query(
+        `UPDATE bookings
+         SET start_date = $2::date, end_date = $3::date, notes = COALESCE($4, notes)
+         WHERE id = $1
+         RETURNING start_date::text, end_date::text`,
+        [booking.id, nextStart, nextEnd, notes?.trim() ?? null],
+      );
+
+      // Worth a trail: a changed departure date moves what the client owes.
+      await db.query(
+        `INSERT INTO care_events (booking_id, pet_id, type, staff_name, staff_id, note)
+         SELECT b.id, b.pet_id, 'note', $2, $3, $4 FROM bookings b WHERE b.id = $1`,
+        [
+          booking.id, req.staff.name, req.staff.id,
+          `Dates changed from ${booking.start_date} → ${booking.end_date} to ${rows[0].start_date} → ${rows[0].end_date}.`,
+        ],
+      );
+
+      return { startDate: rows[0].start_date, endDate: rows[0].end_date };
+    });
+  });
+
   app.post<{
     Body: {
       petId: string;
