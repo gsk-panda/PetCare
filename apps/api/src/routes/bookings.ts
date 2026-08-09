@@ -40,6 +40,57 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
+   * Can this stay move to these dates? Same rule the save path enforces, but
+   * answerable while someone is still choosing, so a clash shows up before
+   * they commit rather than as an error afterwards.
+   */
+  app.get<{
+    Params: { bookingId: string };
+    Querystring: { startDate?: string; endDate?: string };
+  }>('/bookings/:bookingId/date-availability', async (req, reply) => {
+    const iso = /^\d{4}-\d{2}-\d{2}$/;
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate || !iso.test(startDate) || !iso.test(endDate)) {
+      return reply.code(400).send({ error: 'startDate and endDate must be YYYY-MM-DD' });
+    }
+
+    return withTenant(req.tenant.schemaName, async (db) => {
+      const { rows: current } = await db.query(
+        `SELECT b.id, b.run_id, b.service_type, r.code AS run_code, r.label AS run_label
+         FROM bookings b LEFT JOIN runs r ON r.id = b.run_id WHERE b.id = $1`,
+        [req.params.bookingId],
+      );
+      const booking = current[0];
+      if (!booking) return reply.code(404).send({ error: 'Booking not found' });
+
+      // Nothing to clash with until a run is assigned.
+      if (!booking.run_id || booking.service_type !== 'boarding') {
+        return { available: true, runLabel: booking.run_label ?? booking.run_code, conflicts: [] };
+      }
+
+      const { rows: conflicts } = await db.query(
+        `SELECT p.name AS pet_name, b.start_date::text AS start_date, b.end_date::text AS end_date
+         FROM bookings b JOIN pets p ON p.id = b.pet_id
+         WHERE b.run_id = $1 AND b.id <> $2 AND b.service_type = 'boarding'
+           AND b.status IN ('requested', 'confirmed', 'checked_in')
+           AND b.start_date < $4::date AND b.end_date > $3::date
+         ORDER BY b.start_date`,
+        [booking.run_id, booking.id, startDate, endDate],
+      );
+
+      return {
+        available: conflicts.length === 0,
+        runLabel: booking.run_label ?? booking.run_code,
+        conflicts: conflicts.map((c) => ({
+          petName: c.pet_name,
+          startDate: c.start_date,
+          endDate: c.end_date,
+        })),
+      };
+    });
+  });
+
+  /**
    * Extend or shorten a stay. A dog already in the kennel is the common case —
    * the owner's flight moved — so this works on checked-in stays too, and only
    * refuses when the run is genuinely needed by someone else.

@@ -657,6 +657,26 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .cell-input[readonly] { cursor: default; }
 .cell-input[readonly]:hover { border-color: transparent; background: transparent; }
 
+/* ---- Stay window on check-in ---- */
+.stay-window {
+  display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap;
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: var(--s-3);
+}
+.stay-window > div { display: flex; flex-direction: column; gap: 1px; }
+.stay-window span {
+  font-size: var(--t-2xs); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 650;
+}
+.stay-window b { font-size: var(--t-base); font-weight: 650; }
+.stay-window > .ico { color: var(--ink-3); flex-shrink: 0; }
+.stay-window em {
+  margin-left: auto; font-style: normal; font-size: var(--t-xs); font-weight: 650;
+  background: var(--brand-tint); color: var(--brand-deep);
+  border-radius: var(--r-pill); padding: 3px 11px;
+}
+.ok-note { color: var(--good); font-weight: 600; }
+
 /* ---- Rates & billing ---- */
 .rate-inline { display: inline-flex; align-items: center; gap: 3px; }
 .rate-inline > span { font-size: var(--t-sm); color: var(--ink-3); font-weight: 650; }

@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { changeStayDates, fetchCheckoutQuote, type BoardOccupant } from '../api';
+import {
+  changeStayDates,
+  checkDateAvailability,
+  fetchCheckoutQuote,
+  type BoardOccupant,
+  type DateAvailability,
+} from '../api';
 import { money } from './CheckOutPanel';
 import { Icon } from './Icon';
 
@@ -37,6 +43,8 @@ export function StayDatesPanel({
   const [nightlyCents, setNightlyCents] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [availability, setAvailability] = useState<DateAvailability | null>(null);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     // The quote gives the current nightly rate, which is what makes the
@@ -55,15 +63,34 @@ export function StayDatesPanel({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // Ask whether the run is free for the dates currently chosen, so a clash
+  // shows before Save rather than as an error after it.
+  useEffect(() => {
+    if (endDate < startDate) return;
+    let stale = false;
+    setChecking(true);
+    const t = window.setTimeout(() => {
+      checkDateAvailability(occupant.bookingId, startDate, endDate)
+        .then((a) => !stale && setAvailability(a))
+        .catch(() => !stale && setAvailability(null))
+        .finally(() => !stale && setChecking(false));
+    }, 250);
+    return () => {
+      stale = true;
+      window.clearTimeout(t);
+    };
+  }, [occupant.bookingId, startDate, endDate]);
+
   const isBoarding = occupant.serviceType === 'boarding';
   const wasNights = nightsBetween(occupant.startDate, occupant.endDate);
   const nowNights = nightsBetween(startDate, endDate);
   const deltaNights = nowNights - wasNights;
   const invalid = isBoarding ? nowNights < 1 : endDate !== startDate;
   const changed = startDate !== occupant.startDate || endDate !== occupant.endDate;
+  const blocked = availability !== null && !availability.available;
 
   const submit = async () => {
-    if (invalid || !changed || saving) return;
+    if (invalid || !changed || saving || blocked) return;
     setSaving(true);
     setError(null);
     try {
@@ -144,6 +171,25 @@ export function StayDatesPanel({
             </div>
           )}
 
+          {!invalid && blocked && (
+            <div className="form-error">
+              <b>{availability!.runLabel ?? 'That run'} isn't free for those dates.</b>
+              <ul style={{ margin: '4px 0 0 16px' }}>
+                {availability!.conflicts.map((c, i) => (
+                  <li key={i}>
+                    {c.petName} is in it {c.startDate} → {c.endDate}
+                  </li>
+                ))}
+              </ul>
+              Move one of them, or pick different dates.
+            </div>
+          )}
+          {!invalid && changed && !blocked && availability?.available && !checking && (
+            <p className="field-note ok-note">
+              {availability.runLabel ?? 'The run'} is free for those dates.
+            </p>
+          )}
+
           {changed && !invalid && isBoarding && (
             <div className={deltaNights >= 0 ? 'delta-note' : 'delta-note down'}>
               <b>
@@ -175,9 +221,9 @@ export function StayDatesPanel({
             type="button"
             className="btn"
             onClick={submit}
-            disabled={invalid || !changed || saving}
+            disabled={invalid || !changed || saving || blocked || checking}
           >
-            {saving ? 'Saving…' : 'Save dates'}
+            {saving ? 'Saving…' : checking ? 'Checking…' : blocked ? 'Run not free' : 'Save dates'}
           </button>
         </div>
       </div>

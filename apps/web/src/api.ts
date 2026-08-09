@@ -310,6 +310,21 @@ export const updateServiceItem = (
 ) => send<{ ok: boolean }>(`/settings/service-items/${itemId}`, 'PATCH', body);
 
 /* ---------------------------- stays ---------------------------- */
+export interface DateAvailability {
+  available: boolean;
+  runLabel: string | null;
+  conflicts: Array<{ petName: string; startDate: string; endDate: string }>;
+}
+
+export const checkDateAvailability = (
+  bookingId: string,
+  startDate: string,
+  endDate: string,
+) =>
+  get<DateAvailability>(
+    `/api/${TENANT_SLUG}/bookings/${bookingId}/date-availability?startDate=${startDate}&endDate=${endDate}`,
+  );
+
 export const changeStayDates = (
   bookingId: string,
   body: { startDate?: string; endDate?: string },

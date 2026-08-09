@@ -11,6 +11,20 @@ import { Icon } from './Icon';
 
 const DAY_MS = 86_400_000;
 
+function longDate(iso: string): string {
+  return new Date(iso + 'T12:00:00').toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function nightsOf(start: string, end: string): number {
+  return Math.round(
+    (new Date(end + 'T12:00:00').getTime() - new Date(start + 'T12:00:00').getTime()) / DAY_MS,
+  );
+}
+
 function daysUntil(iso: string): number {
   const then = new Date(iso + 'T12:00:00').getTime();
   const now = new Date().setHours(12, 0, 0, 0);
@@ -181,16 +195,30 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
           <>
             <div className="modal-body">
               <p className="checkin-sub">
-                {pet.breed ?? pet.species}
-                {' · '}
-                {occupant.serviceType === 'boarding'
-                  ? `${occupant.totalNights ?? ''} night stay`
-                  : 'daycare'}
-                {' · owner '}
-                {pet.owner.name}
-                {' · '}
+                {pet.breed ?? pet.species} · owner {pet.owner.name} ·{' '}
                 <Link to={`/pets/${pet.id}`} className="linkish">full profile</Link>
               </p>
+
+              {/* The date the owner is coming back is the thing the desk is
+                  asked about at drop-off, so it belongs on the panel. */}
+              <div className="stay-window">
+                <div>
+                  <span>Drop off</span>
+                  <b>{longDate(occupant.startDate)}</b>
+                </div>
+                <Icon name="chevronRight" size={16} />
+                <div>
+                  <span>Pick up</span>
+                  <b>{longDate(occupant.endDate)}</b>
+                </div>
+                {occupant.serviceType === 'boarding' && (
+                  <em>
+                    {nightsOf(occupant.startDate, occupant.endDate)} night
+                    {nightsOf(occupant.startDate, occupant.endDate) === 1 ? '' : 's'}
+                  </em>
+                )}
+                {occupant.serviceType === 'daycare' && <em>Daycare</em>}
+              </div>
 
               {expired.length > 0 && (
                 <div className="form-error">
