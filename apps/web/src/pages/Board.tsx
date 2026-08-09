@@ -4,25 +4,40 @@ import { checkOut, fetchBoard, type BoardCell, type BoardOccupant } from '../api
 import { CheckInPanel } from '../components/CheckInPanel';
 import { Icon } from '../components/Icon';
 
-/** The one action this occupant can take right now, if any. */
-function actionFor(o: BoardOccupant): 'Check in' | 'Check out' | null {
-  const today = new Date().toISOString().slice(0, 10);
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function shiftDate(iso: string, days: number): string {
+  const d = new Date(iso + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return isoDate(d);
+}
+
+/**
+ * The one action this occupant can take right now, if any. Only offered on
+ * today's board: you cannot check a dog in yesterday, and offering the button
+ * on a future day would just produce a 409 from the server.
+ */
+function actionFor(o: BoardOccupant, viewing: string): 'Check in' | 'Check out' | null {
+  const today = isoDate(new Date());
+  if (viewing !== today) return null;
   if (o.status === 'requested' || o.status === 'confirmed') return 'Check in';
   if (o.status === 'checked_in' && (o.serviceType === 'daycare' || o.endDate === today))
     return 'Check out';
   return null;
 }
 
-function cellState(cell: BoardCell): 'open' | 'occ' | 'arr' | 'dep' {
+/** State is relative to the day being viewed, not to today. */
+function cellState(cell: BoardCell, viewing: string): 'open' | 'occ' | 'arr' | 'dep' {
   const o = cell.occupants[0];
   if (!o) return 'open';
   if (o.serviceType === 'boarding') {
-    const today = new Date().toISOString().slice(0, 10);
-    if (o.status === 'confirmed' && o.startDate === today) return 'arr';
-    if (o.endDate === today) return 'dep';
+    if (o.startDate === viewing) return 'arr';
+    if (o.endDate === viewing) return 'dep';
     return 'occ';
   }
-  return o.status === 'confirmed' ? 'arr' : 'occ';
+  return o.status === 'confirmed' || o.status === 'requested' ? 'arr' : 'occ';
 }
 
 function occupantLine(o: BoardOccupant): string {
@@ -34,6 +49,8 @@ function occupantLine(o: BoardOccupant): string {
 }
 
 export function Board() {
+  const today = isoDate(new Date());
+  const [date, setDate] = useState(today);
   const [cells, setCells] = useState<BoardCell[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -43,10 +60,11 @@ export function Board() {
   } | null>(null);
 
   const load = useCallback(() => {
-    fetchBoard()
+    setError(null);
+    fetchBoard(date)
       .then((r) => setCells(r.cells))
       .catch((e: Error) => setError(e.message));
-  }, []);
+  }, [date]);
   useEffect(load, [load]);
 
   const zones = useMemo(() => {
@@ -61,7 +79,7 @@ export function Board() {
 
   // Check-in opens the drop-off checklist; check-out is a single confirm.
   const act = async (o: BoardOccupant, runCode: string) => {
-    const action = actionFor(o);
+    const action = actionFor(o, date);
     if (!action) return;
     if (action === 'Check in') {
       setCheckingIn({ occupant: o, runCode });
@@ -86,11 +104,40 @@ export function Board() {
       <div className="topbar">
         <h1>Facility board</h1>
         <span className="date">
-          {new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-          {' · '}
-          {new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+          {new Date(date + 'T12:00:00').toLocaleDateString(undefined, {
+            weekday: 'long',
+            month: 'short',
+            day: 'numeric',
+          })}
+          {date === today && ' · today'}
         </span>
         <div className="right">
+          <button
+            className="btn ghost"
+            onClick={() => setDate((d) => shiftDate(d, -1))}
+            aria-label="Previous day"
+          >
+            <Icon name="chevronLeft" size={15} />
+          </button>
+          <input
+            className="date-input"
+            type="date"
+            value={date}
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+            aria-label="Board date"
+          />
+          <button
+            className="btn ghost"
+            onClick={() => setDate((d) => shiftDate(d, 1))}
+            aria-label="Next day"
+          >
+            <Icon name="chevronRight" size={15} />
+          </button>
+          {date !== today && (
+            <button className="btn ghost" onClick={() => setDate(today)}>
+              Today
+            </button>
+          )}
           <button className="btn ghost" onClick={load}>
             <Icon name="refresh" size={15} />
             Refresh
@@ -117,7 +164,7 @@ export function Board() {
             <h2>{zone}</h2>
             <div className="runs">
               {zoneCells.map((cell) => {
-                const state = cellState(cell);
+                const state = cellState(cell, date);
                 const isGroup = cell.run.kind === 'playgroup';
 
                 // Play groups hold many dogs, so they get a full-width cell
@@ -126,7 +173,7 @@ export function Board() {
                   return (
                     <div key={cell.run.id} className="run group">
                       <div className="group-hd">
-                        <span className="id">{cell.run.code}</span>
+                        <span className="id">{cell.run.label}</span>
                         <b>
                           {cell.occupants.length} / {cell.run.capacity} dogs
                         </b>
@@ -136,7 +183,7 @@ export function Board() {
                       ) : (
                         <div className="grouplist">
                           {cell.occupants.map((g) => {
-                            const gAction = actionFor(g);
+                            const gAction = actionFor(g, date);
                             return (
                               <span key={g.bookingId} className="gchip">
                                 <Link to={`/pets/${g.petId}`} className="gname">
@@ -180,7 +227,7 @@ export function Board() {
                       <b>Open {cell.run.kind}</b>
                     ) : (
                       cell.occupants.map((o) => {
-                        const action = actionFor(o);
+                        const action = actionFor(o, date);
                         return (
                           <div key={o.bookingId} className="occ-entry">
                             <Link to={`/pets/${o.petId}`} className="runlink">

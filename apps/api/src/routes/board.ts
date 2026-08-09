@@ -36,6 +36,7 @@ interface CheckInBody {
 interface BoardRow {
   run_id: string;
   code: string;
+  label: string | null;
   zone: string;
   kind: 'suite' | 'run' | 'playgroup';
   capacity: number;
@@ -56,39 +57,50 @@ interface BoardRow {
 }
 
 export async function boardRoutes(app: FastifyInstance): Promise<void> {
-  // Live facility board: every run/playgroup with today's occupants.
-  app.get('/board', async (req) => {
+  // The facility board for a given day. Defaults to today, but the desk needs
+  // to look ahead at tomorrow's arrivals and back at what happened yesterday.
+  app.get<{ Querystring: { date?: string } }>('/board', async (req, reply) => {
+    const date = req.query.date ?? new Date().toISOString().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return reply.code(400).send({ error: 'date must be YYYY-MM-DD' });
+    }
+
     return withTenant(req.tenant.schemaName, async (db) => {
       const { rows } = await db.query<BoardRow>(
         `SELECT
-           r.id AS run_id, r.code, r.zone, r.kind, r.capacity, r.display_order,
+           r.id AS run_id, r.code, r.label, r.zone, r.kind, r.capacity, r.display_order,
            b.id AS booking_id, b.service_type, b.status,
            b.start_date::text, b.end_date::text,
            p.id AS pet_id, p.name AS pet_name, p.breed, p.avatar_color,
            (p.medication_notes IS NOT NULL) AS has_meds,
            (c.created_at > now() - interval '30 days') AS is_new_client,
            CASE WHEN b.service_type = 'boarding'
-                THEN (CURRENT_DATE - b.start_date) + 1 END AS night_number,
+                THEN ($1::date - b.start_date) + 1 END AS night_number,
            CASE WHEN b.service_type = 'boarding'
                 THEN (b.end_date - b.start_date) END AS total_nights
          FROM runs r
          LEFT JOIN bookings b
            ON b.run_id = r.id
-          AND b.status IN ('confirmed', 'checked_in', 'checked_out')
+          AND b.status IN ('requested', 'confirmed', 'checked_in', 'checked_out')
           AND (
             (b.service_type = 'boarding'
-              AND b.start_date <= CURRENT_DATE AND b.end_date >= CURRENT_DATE)
-            OR (b.service_type = 'daycare' AND b.start_date = CURRENT_DATE)
+              AND b.start_date <= $1::date AND b.end_date >= $1::date)
+            OR (b.service_type = 'daycare' AND b.start_date = $1::date)
           )
          LEFT JOIN pets p ON p.id = b.pet_id
          LEFT JOIN clients c ON c.id = b.client_id
+         WHERE r.active
          ORDER BY
            CASE r.kind WHEN 'suite' THEN 1 WHEN 'run' THEN 2 ELSE 3 END,
-           r.zone, r.code_prefix, r.code_number, r.code, p.name`,
+           r.zone, r.display_order, r.code_prefix, r.code_number, r.code, p.name`,
+        [date],
       );
 
       const byRun = new Map<string, {
-        run: { id: string; code: string; zone: string; kind: string; capacity: number };
+        run: {
+          id: string; code: string; label: string; zone: string;
+          kind: string; capacity: number;
+        };
         occupants: unknown[];
       }>();
       for (const row of rows) {
@@ -98,6 +110,9 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
             run: {
               id: row.run_id,
               code: row.code,
+              // Play groups are named by the facility ("Small dogs"); the code
+              // is an internal key and should not be what staff read.
+              label: row.label ?? row.code,
               zone: row.zone,
               kind: row.kind,
               capacity: row.capacity,
@@ -124,7 +139,7 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
           });
         }
       }
-      return { cells: [...byRun.values()] };
+      return { date, cells: [...byRun.values()] };
     });
   });
 

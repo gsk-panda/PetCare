@@ -78,7 +78,15 @@ export interface BoardOccupant {
 }
 
 export interface BoardCell {
-  run: { id: string; code: string; zone: string; kind: string; capacity: number };
+  run: {
+    id: string;
+    code: string;
+    /** Facility-given name; falls back to the code when there isn't one. */
+    label: string;
+    zone: string;
+    kind: string;
+    capacity: number;
+  };
   occupants: BoardOccupant[];
 }
 
@@ -110,7 +118,10 @@ export interface ClientRow {
 
 export const fetchTenantMeta = () => get<TenantMeta>(`/api/tenants/${TENANT_SLUG}/meta`);
 export const fetchDashboard = () => get<DashboardStats>(`/api/${TENANT_SLUG}/dashboard`);
-export const fetchBoard = () => get<{ cells: BoardCell[] }>(`/api/${TENANT_SLUG}/board`);
+export const fetchBoard = (date?: string) =>
+  get<{ date: string; cells: BoardCell[] }>(
+    `/api/${TENANT_SLUG}/board${date ? `?date=${date}` : ''}`,
+  );
 export const fetchBookings = (from: string, to: string) =>
   get<{ bookings: BookingRow[] }>(`/api/${TENANT_SLUG}/bookings?from=${from}&to=${to}`);
 export const fetchClients = () => get<{ clients: ClientRow[] }>(`/api/${TENANT_SLUG}/clients`);
