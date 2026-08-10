@@ -32,12 +32,40 @@ await withTenant(tenant.schemaName, async (db) => {
   const runIds = new Map<string, string>();
   const addRun = async (code: string, zone: string, kind: string, capacity: number, order: number) => {
     const { rows } = await db.query(
-      `INSERT INTO runs (code, zone, kind, capacity, display_order)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-      [code, zone, kind, capacity, order],
+      `INSERT INTO runs (code, zone, kind, capacity, display_order, run_type_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      [code, zone, kind, capacity, order, typeIds.get(zone) ?? null],
     );
     runIds.set(code, rows[0].id);
   };
+  /**
+   * Run types come first, and the runs are attached to them.
+   *
+   * Migration 0007 backfills types from whatever runs already exist, which
+   * covers an established facility but does nothing on a fresh database:
+   * migrations run against an empty runs table, then this seed adds runs with
+   * no type and no rate, and every stay prices at zero. Creating the types
+   * here is what makes a freshly provisioned tenant actually bill.
+   */
+  const typeIds = new Map<string, string>();
+  const addRunType = async (
+    name: string,
+    kind: string,
+    defaultCapacity: number,
+    rateCents: number,
+    order: number,
+  ) => {
+    const { rows } = await db.query(
+      `INSERT INTO run_types (name, zone_label, kind, default_capacity, rate_cents, display_order)
+       VALUES ($1, $1, $2, $3, $4, $5) RETURNING id`,
+      [name, kind, defaultCapacity, rateCents, order],
+    );
+    typeIds.set(name, rows[0].id);
+  };
+  await addRunType('Suites · A wing', 'suite', 1, 8000, 1);
+  await addRunType('Standard runs · B wing', 'run', 1, 7500, 2);
+  await addRunType('Standard runs · C wing', 'run', 1, 7500, 3);
+
   // 56 boarding spaces, matching the facility described in the mockups.
   for (let i = 1; i <= 8; i++) await addRun(`A${i}`, 'Suites · A wing', 'suite', 1, i);
   for (let i = 1; i <= 24; i++) await addRun(`B${i}`, 'Standard runs · B wing', 'run', 1, i);
@@ -45,6 +73,9 @@ await withTenant(tenant.schemaName, async (db) => {
   await addRun('GROUP1', 'Daycare play groups', 'playgroup', 12, 1);
   await addRun('GROUP2', 'Daycare play groups', 'playgroup', 14, 2);
   await addRun('GROUP3', 'Daycare play groups', 'playgroup', 8, 3);
+  // Play groups carry their own daily rate rather than inheriting a run type,
+  // so without this daycare prices at nothing.
+  await db.query(`UPDATE runs SET rate_cents = 4200 WHERE kind = 'playgroup'`);
 
   // --- Clients & pets -----------------------------------------------------
   const petIds = new Map<string, string>();
