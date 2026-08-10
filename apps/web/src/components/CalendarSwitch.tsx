@@ -1,8 +1,6 @@
 import { NavLink } from 'react-router-dom';
 
-export function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
+export { isoDate } from '../facility-time';
 
 export function addDays(d: Date, n: number): Date {
   const out = new Date(d);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PortalData, PortalTab } from './PortalApp';
 import { StayLogView } from './StayLogView';
+import { facilityToday } from '../facility-time';
 
 function fmt(iso: string): string {
   return new Date(iso + 'T12:00:00').toLocaleDateString(undefined, {
@@ -20,7 +21,7 @@ export function PortalHome({
   reload: () => Promise<void>;
 }) {
   const [openLog, setOpenLog] = useState<string | null>(null);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = facilityToday();
 
   const inHouse = data.bookings.filter((b) => b.status === 'checked_in');
   const upcoming = data.bookings

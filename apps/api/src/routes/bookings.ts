@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { withTenant } from '../db.js';
+import { facilityToday, withTenant } from '../db.js';
 
 export async function bookingRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Querystring: { from?: string; to?: string } }>('/bookings', async (req) => {
-    const from = req.query.from ?? new Date().toISOString().slice(0, 10);
+    const from = req.query.from ?? (await facilityToday(req.tenant.schemaName));
     const to = req.query.to ?? from;
     return withTenant(req.tenant.schemaName, async (db) => {
       const { rows } = await db.query(

@@ -4,6 +4,7 @@ import { fetchStaffMe, fetchTenantMeta, type StaffUser, type TenantMeta } from '
 import { Shell } from './components/Shell';
 import { StaffSignIn } from './components/StaffSignIn';
 import { StaffContext } from './staff-context';
+import { setFacilityTimezone } from './facility-time';
 import { Dashboard } from './pages/Dashboard';
 import { Board } from './pages/Board';
 import { Clients } from './pages/Clients';
@@ -22,6 +23,8 @@ export default function App() {
   useEffect(() => {
     fetchTenantMeta()
       .then((meta) => {
+        // Before setTenant, so nothing renders a date against the wrong zone.
+        setFacilityTimezone(meta.timezone);
         setTenant(meta);
         document.title = meta.theme.appName;
         // White-label: tenant theme config overrides the brand tokens at runtime.

@@ -7,10 +7,8 @@ import {
   type RunOption,
 } from '../api';
 import { Icon } from './Icon';
+import { facilityToday, isoDate } from '../facility-time';
 
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function addDays(iso: string, n: number): string {
   const d = new Date(iso + 'T12:00:00');
@@ -26,7 +24,7 @@ interface Props {
 }
 
 export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
-  const today = isoDate(new Date());
+  const today = facilityToday();
   const [serviceType, setServiceType] = useState<'boarding' | 'daycare'>('boarding');
   const [petId, setPetId] = useState('');
   const [startDate, setStartDate] = useState(initialDate ?? today);

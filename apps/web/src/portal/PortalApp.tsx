@@ -17,6 +17,7 @@ import { PortalPets } from './PortalPets';
 import { PortalReservations } from './PortalReservations';
 import { PortalAccount } from './PortalAccount';
 import './portal.css';
+import { facilityToday } from '../facility-time';
 
 export type PortalTab = 'home' | 'reservations' | 'pets' | 'account';
 
@@ -82,7 +83,7 @@ export function PortalApp() {
   }
 
   const upcoming = data.bookings.filter(
-    (b) => b.status !== 'canceled' && b.endDate >= new Date().toISOString().slice(0, 10),
+    (b) => b.status !== 'canceled' && b.endDate >= facilityToday(),
   );
 
   return (

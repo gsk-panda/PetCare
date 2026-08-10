@@ -19,7 +19,7 @@ export async function alertRoutes(app: FastifyInstance): Promise<void> {
     return withTenant(req.tenant.schemaName, async (db) => {
       const { rows } = await db.query(
         `SELECT v.id, v.vaccine, v.expires_on::text AS expires_on, v.verified,
-                (v.expires_on - CURRENT_DATE)::int AS days_left,
+                (v.expires_on - facility_today())::int AS days_left,
                 p.id AS pet_id, p.name AS pet_name, p.avatar_color,
                 c.first_name || ' ' || c.last_name AS client_name,
                 c.phone AS client_phone,
@@ -34,13 +34,13 @@ export async function alertRoutes(app: FastifyInstance): Promise<void> {
            FROM bookings b
            WHERE b.pet_id = p.id
              AND b.status IN ('requested', 'confirmed', 'checked_in')
-             AND b.end_date >= CURRENT_DATE
+             AND b.end_date >= facility_today()
              AND v.expires_on <= b.end_date
            ORDER BY b.start_date
            LIMIT 1
          ) s ON true
          LEFT JOIN runs r ON r.id = s.run_id
-         WHERE v.expires_on <= CURRENT_DATE + $1::int
+         WHERE v.expires_on <= facility_today() + $1::int
          ORDER BY v.expires_on, p.name`,
         [withinDays],
       );

@@ -8,6 +8,7 @@ import cookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import { tenantRoutes } from './routes/index.js';
 import { getTenantBySlug } from './tenants.js';
+import { facilityTimezone } from './db.js';
 import { migrateAll } from './migrations.js';
 
 const app = Fastify({ logger: true });
@@ -32,7 +33,16 @@ app.get('/health', async () => ({ ok: true }));
 app.get<{ Params: { slug: string } }>('/api/tenants/:slug/meta', async (req, reply) => {
   const tenant = await getTenantBySlug(req.params.slug);
   if (!tenant) return reply.code(404).send({ error: 'Unknown tenant' });
-  return { slug: tenant.slug, name: tenant.name, plan: tenant.plan, theme: tenant.theme };
+  // The timezone rides along with the branding because the app needs it before
+  // anything renders a date, and this is the one call made before sign-in.
+  const timezone = await facilityTimezone(tenant.schemaName);
+  return {
+    slug: tenant.slug,
+    name: tenant.name,
+    plan: tenant.plan,
+    theme: tenant.theme,
+    timezone,
+  };
 });
 
 await app.register(tenantRoutes, { prefix: '/api/:tenant' });

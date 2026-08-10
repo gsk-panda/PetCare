@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { withTenant } from '../db.js';
+import { facilityToday, withTenant } from '../db.js';
 
 export interface StayMedicationInput {
   name: string;
@@ -64,7 +64,7 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
   // The facility board for a given day. Defaults to today, but the desk needs
   // to look ahead at tomorrow's arrivals and back at what happened yesterday.
   app.get<{ Querystring: { date?: string } }>('/board', async (req, reply) => {
-    const date = req.query.date ?? new Date().toISOString().slice(0, 10);
+    const date = req.query.date ?? (await facilityToday(req.tenant.schemaName));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return reply.code(400).send({ error: 'date must be YYYY-MM-DD' });
     }

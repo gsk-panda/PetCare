@@ -3,16 +3,12 @@ import type { PortalData } from './PortalApp';
 import { Avatar, StatusPill } from './PortalHome';
 import { StayLogView } from './StayLogView';
 import { cancelBooking, changeBooking, createBooking, type PortalBooking } from './api';
+import { facilityToday, shiftDate } from '../facility-time';
 
 function isoToday(): string {
-  return new Date().toISOString().slice(0, 10);
+  return facilityToday();
 }
 
-function addDays(iso: string, n: number): string {
-  const d = new Date(iso + 'T12:00:00');
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-}
 
 function fmt(iso: string): string {
   return new Date(iso + 'T12:00:00').toLocaleDateString(undefined, {
@@ -174,8 +170,8 @@ function BookingSheet({
   const [serviceType, setServiceType] = useState<'boarding' | 'daycare'>(
     existing?.serviceType ?? 'boarding',
   );
-  const [startDate, setStartDate] = useState(existing?.startDate ?? addDays(today, 1));
-  const [endDate, setEndDate] = useState(existing?.endDate ?? addDays(today, 3));
+  const [startDate, setStartDate] = useState(existing?.startDate ?? shiftDate(today, 1));
+  const [endDate, setEndDate] = useState(existing?.endDate ?? shiftDate(today, 3));
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -258,7 +254,7 @@ function BookingSheet({
                 onChange={(e) => {
                   setStartDate(e.target.value);
                   if (serviceType === 'boarding' && endDate <= e.target.value) {
-                    setEndDate(addDays(e.target.value, 1));
+                    setEndDate(shiftDate(e.target.value, 1));
                   }
                 }}
                 required
@@ -269,7 +265,7 @@ function BookingSheet({
                 <span>Pick up</span>
                 <input
                   type="date"
-                  min={addDays(startDate, 1)}
+                  min={shiftDate(startDate, 1)}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   required

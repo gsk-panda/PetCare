@@ -2,17 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CARE_SLOTS, SLOT_HOURS, type CareSlot, type CareTask } from '@petcare/shared';
 import { completeCareTask, fetchCareTasks, undoCareTask, type CareTasksResponse } from '../api';
+import { facilityToday, isoDate } from '../facility-time';
 
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function taskKeyOf(t: CareTask): string {
   return `${t.bookingId}|${t.type}|${t.slot}|${t.subject ?? ''}`;
 }
 
 export function CareRounds() {
-  const today = isoDate(new Date());
+  const today = facilityToday();
   const [date, setDate] = useState(today);
   const [data, setData] = useState<CareTasksResponse | null>(null);
   const [error, setError] = useState<string | null>(null);

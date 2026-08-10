@@ -6,6 +6,7 @@ import { NewBookingModal } from '../components/NewBookingModal';
 import { VaccineAlerts } from '../components/VaccineAlerts';
 import { LoadingRegion } from '../components/Skeleton';
 import { Icon } from '../components/Icon';
+import { facilityToday } from '../facility-time';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -24,7 +25,7 @@ export function Dashboard() {
   const [arrivalFilter, setArrivalFilter] = useState<ArrivalFilter>('all');
 
   const load = useCallback(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = facilityToday();
     Promise.all([fetchDashboard(), fetchBookings(today, today)])
       .then(([s, b]) => {
         setStats(s);

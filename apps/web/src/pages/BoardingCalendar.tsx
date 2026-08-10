@@ -4,6 +4,7 @@ import { fetchCalendar, type CalendarBooking, type CalendarResponse } from '../a
 import { NewBookingModal } from '../components/NewBookingModal';
 import { Icon } from '../components/Icon';
 import { CalendarSwitch, addDays, isoDate, weekStart } from '../components/CalendarSwitch';
+import { facilityToday } from '../facility-time';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SPAN_DAYS = 14;
@@ -26,7 +27,7 @@ export function BoardingCalendar() {
 
   const from = isoDate(anchor);
   const to = isoDate(addDays(anchor, SPAN_DAYS - 1));
-  const today = isoDate(new Date());
+  const today = facilityToday();
 
   const load = useCallback(() => {
     setError(null);

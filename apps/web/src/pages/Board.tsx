@@ -5,16 +5,7 @@ import { CheckInPanel } from '../components/CheckInPanel';
 import { CheckOutPanel } from '../components/CheckOutPanel';
 import { StayDatesPanel } from '../components/StayDatesPanel';
 import { Icon } from '../components/Icon';
-
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function shiftDate(iso: string, days: number): string {
-  const d = new Date(iso + 'T12:00:00');
-  d.setDate(d.getDate() + days);
-  return isoDate(d);
-}
+import { facilityToday, shiftDate } from '../facility-time';
 
 /**
  * The one action this occupant can take right now, if any. Only offered on
@@ -22,7 +13,7 @@ function shiftDate(iso: string, days: number): string {
  * on a future day would just produce a 409 from the server.
  */
 function actionFor(o: BoardOccupant, viewing: string): 'Check in' | 'Check out' | null {
-  const today = isoDate(new Date());
+  const today = facilityToday();
   if (viewing !== today) return null;
   if (o.status === 'requested' || o.status === 'confirmed') return 'Check in';
   if (o.status === 'checked_in' && (o.serviceType === 'daycare' || o.endDate === today))
@@ -51,7 +42,7 @@ function occupantLine(o: BoardOccupant): string {
 }
 
 export function Board() {
-  const today = isoDate(new Date());
+  const today = facilityToday();
   const [date, setDate] = useState(today);
   const [cells, setCells] = useState<BoardCell[]>([]);
   const [error, setError] = useState<string | null>(null);

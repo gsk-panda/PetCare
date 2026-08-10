@@ -4,6 +4,7 @@ import { fetchCalendar, type CalendarBooking, type CalendarResponse } from '../a
 import { NewBookingModal } from '../components/NewBookingModal';
 import { Icon } from '../components/Icon';
 import { CalendarSwitch, addDays, isoDate, weekStart } from '../components/CalendarSwitch';
+import { facilityToday } from '../facility-time';
 
 const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -20,7 +21,7 @@ export function DaycareCalendar() {
 
   const from = isoDate(anchor);
   const to = isoDate(addDays(anchor, 6));
-  const today = isoDate(new Date());
+  const today = facilityToday();
 
   const load = useCallback(() => {
     setError(null);

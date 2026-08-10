@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { withTenant } from '../db.js';
+import { facilityToday, withTenant } from '../db.js';
 
 /**
  * Runs with availability for a proposed booking window.
@@ -19,7 +19,7 @@ export async function runRoutes(app: FastifyInstance): Promise<void> {
     if (serviceType !== 'boarding' && serviceType !== 'daycare') {
       return reply.code(400).send({ error: "serviceType must be 'boarding' or 'daycare'" });
     }
-    const from = req.query.from ?? new Date().toISOString().slice(0, 10);
+    const from = req.query.from ?? (await facilityToday(req.tenant.schemaName));
     const to = req.query.to ?? from;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
       return reply.code(400).send({ error: 'from/to must be YYYY-MM-DD' });

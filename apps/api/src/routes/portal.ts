@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { withTenant } from '../db.js';
+import { facilityToday, withTenant } from '../db.js';
 import { loginCodeMail, mailerConfigured, sendMail } from '../mailer.js';
 import {
   clearSessionCookie,
@@ -358,7 +358,12 @@ async function protectedRoutes(app: FastifyInstance): Promise<void> {
     };
   }>('/portal/bookings', async (req, reply) => {
     const { petId, serviceType, startDate, endDate, notes } = req.body ?? {};
-    const problem = validateDates(serviceType, startDate, endDate);
+    const problem = validateDates(
+      serviceType,
+      startDate,
+      endDate,
+      await facilityToday(req.tenant.schemaName),
+    );
     if (!petId) return reply.code(400).send({ error: 'Choose a pet' });
     if (problem) return reply.code(400).send({ error: problem });
 
@@ -405,7 +410,12 @@ async function protectedRoutes(app: FastifyInstance): Promise<void> {
 
       const nextStart = startDate ?? booking.start_date;
       const nextEnd = endDate ?? booking.end_date;
-      const problem = validateDates(booking.service_type, nextStart, nextEnd);
+      const problem = validateDates(
+        booking.service_type,
+        nextStart,
+        nextEnd,
+        await facilityToday(req.tenant.schemaName),
+      );
       if (problem) return reply.code(400).send({ error: problem });
 
       // Any owner change re-enters review; the desk may have already assigned
@@ -567,6 +577,7 @@ function validateDates(
   serviceType: string | undefined,
   startDate: string | undefined,
   endDate: string | undefined,
+  today: string,
 ): string | null {
   if (serviceType !== 'boarding' && serviceType !== 'daycare') {
     return 'Choose boarding or daycare';
@@ -580,7 +591,8 @@ function validateDates(
   if (serviceType === 'daycare' && endDate !== startDate) {
     return 'Daycare is a single day';
   }
-  const today = new Date().toISOString().slice(0, 10);
+  // `today` is the facility's date, not the server's. A client booking at
+  // 9pm Pacific must not be told that tomorrow is already in the past.
   if (startDate < today) return 'Choose a date from today onwards';
   return null;
 }

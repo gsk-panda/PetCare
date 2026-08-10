@@ -11,6 +11,22 @@ import {
 import { money } from './CheckOutPanel';
 import { Icon } from './Icon';
 
+/**
+ * The zones a US boarding facility plausibly sits in. Not exhaustive on
+ * purpose — a list of 400 IANA names is worse than a short one, and the
+ * configured value is always offered even when it is not here.
+ */
+const ZONES = [
+  'America/New_York',
+  'America/Detroit',
+  'America/Chicago',
+  'America/Denver',
+  'America/Phoenix',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'Pacific/Honolulu',
+];
+
 /** Dollars in the input, cents on the wire. */
 function toCents(dollars: string): number | null {
   const n = Number(dollars.replace(/[^0-9.]/g, ''));
@@ -124,10 +140,31 @@ export function BillingSettings({
               }}
             />
           </label>
+          <label className="inline-field" style={{ maxWidth: 230 }}>
+            <span>Time zone</span>
+            <select
+              defaultValue={data.timezone}
+              disabled={!canEdit}
+              onChange={(e) => {
+                if (e.target.value && e.target.value !== data.timezone) {
+                  void run('timezone', () => updateBillingSettings({ timezone: e.target.value }));
+                }
+              }}
+            >
+              {/* The configured zone first, in case it is one this list omits. */}
+              {[data.timezone, ...ZONES.filter((z) => z !== data.timezone)].map((z) => (
+                <option key={z} value={z}>
+                  {z.split('/').pop()?.replace(/_/g, ' ')} · {z}
+                </option>
+              ))}
+            </select>
+          </label>
           <p className="field-note">
             Tax applies to boarding, daycare and taxable extras; adjustments are never taxed.
-            Collect after {data.pickupCutoffLabel} and the pickup day is charged as a full day,
-            judged on {data.timezone.replace('_', ' ')} time.
+            Collect after {data.pickupCutoffLabel} and the pickup day is charged as a full day.
+            The time zone decides more than the cutoff: it is what the whole building means by
+            &ldquo;today&rdquo;, so care rounds and the board roll over at your midnight rather
+            than the server&rsquo;s.
           </p>
         </div>
 

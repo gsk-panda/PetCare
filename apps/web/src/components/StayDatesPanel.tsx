@@ -8,12 +8,8 @@ import {
 } from '../api';
 import { money } from './CheckOutPanel';
 import { Icon } from './Icon';
+import { shiftDate } from '../facility-time';
 
-function shift(iso: string, days: number): string {
-  const d = new Date(iso + 'T12:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
 
 function nightsBetween(start: string, end: string): number {
   return Math.round(
@@ -143,7 +139,7 @@ export function StayDatesPanel({
                 <input
                   type="date"
                   value={endDate}
-                  min={shift(startDate, 1)}
+                  min={shiftDate(startDate, 1)}
                   onChange={(e) => setEndDate(e.target.value)}
                 />
               </label>
@@ -163,7 +159,7 @@ export function StayDatesPanel({
                   key={n}
                   type="button"
                   className="chip"
-                  onClick={() => setEndDate((d) => shift(d, n))}
+                  onClick={() => setEndDate((d) => shiftDate(d, n))}
                 >
                   {n > 0 ? `+${n}` : n} night{Math.abs(n) === 1 ? '' : 's'}
                 </button>

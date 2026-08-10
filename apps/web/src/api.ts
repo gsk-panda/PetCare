@@ -59,6 +59,8 @@ export interface TenantMeta {
   name: string;
   plan: 'free' | 'pro';
   theme: TenantTheme;
+  /** IANA zone the facility's calendar days are measured in. */
+  timezone: string;
 }
 
 export interface BoardOccupant {

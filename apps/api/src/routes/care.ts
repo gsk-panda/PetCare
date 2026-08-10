@@ -7,7 +7,7 @@ import {
   type CareSlot,
   type CareTask,
 } from '@petcare/shared';
-import { withTenant } from '../db.js';
+import { facilityToday, withTenant } from '../db.js';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -118,7 +118,7 @@ async function buildTasks(db: pg.PoolClient, date: string): Promise<CareTask[]> 
 
 export async function careRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Querystring: { date?: string } }>('/care-tasks', async (req, reply) => {
-    const date = req.query.date ?? new Date().toISOString().slice(0, 10);
+    const date = req.query.date ?? (await facilityToday(req.tenant.schemaName));
     if (!ISO_DATE.test(date)) {
       return reply.code(400).send({ error: 'date must be YYYY-MM-DD' });
     }
@@ -147,7 +147,7 @@ export async function careRoutes(app: FastifyInstance): Promise<void> {
     };
   }>('/care-tasks', async (req, reply) => {
     const { bookingId, type, slot, subject, note } = req.body ?? {};
-    const date = req.body?.date ?? new Date().toISOString().slice(0, 10);
+    const date = req.body?.date ?? (await facilityToday(req.tenant.schemaName));
     if (!bookingId || (type !== 'feeding' && type !== 'medication')) {
       return reply.code(400).send({ error: "bookingId and type ('feeding'|'medication') required" });
     }
@@ -191,7 +191,7 @@ export async function careRoutes(app: FastifyInstance): Promise<void> {
     };
   }>('/care-tasks', async (req, reply) => {
     const { bookingId, type, slot, subject } = req.body ?? {};
-    const date = req.body?.date ?? new Date().toISOString().slice(0, 10);
+    const date = req.body?.date ?? (await facilityToday(req.tenant.schemaName));
     if (!bookingId || !slot || !ISO_DATE.test(date)) {
       return reply.code(400).send({ error: 'bookingId, slot and a valid date are required' });
     }
@@ -208,7 +208,7 @@ export async function careRoutes(app: FastifyInstance): Promise<void> {
 
   // Daily care log: what was given, what was missed, who gave it.
   app.get<{ Querystring: { date?: string } }>('/reports/care-log', async (req, reply) => {
-    const date = req.query.date ?? new Date().toISOString().slice(0, 10);
+    const date = req.query.date ?? (await facilityToday(req.tenant.schemaName));
     if (!ISO_DATE.test(date)) {
       return reply.code(400).send({ error: 'date must be YYYY-MM-DD' });
     }

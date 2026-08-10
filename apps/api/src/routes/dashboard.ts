@@ -15,26 +15,28 @@ export async function dashboardRoutes(app: FastifyInstance): Promise<void> {
         `SELECT COUNT(*)::int AS n FROM bookings
          WHERE service_type = 'boarding'
            AND status IN ('confirmed', 'checked_in')
-           AND start_date <= CURRENT_DATE AND end_date > CURRENT_DATE`,
+           AND start_date <= facility_today() AND end_date > facility_today()`,
       );
       const daycareRes = await db.query(
         `SELECT COUNT(*)::int AS n FROM bookings
          WHERE service_type = 'daycare'
            AND status IN ('confirmed', 'checked_in')
-           AND start_date = CURRENT_DATE`,
+           AND start_date = facility_today()`,
       );
       const arrivalsRes = await db.query(
         `SELECT COUNT(*)::int AS n FROM bookings
-         WHERE start_date = CURRENT_DATE
+         WHERE start_date = facility_today()
            AND status IN ('requested', 'confirmed', 'checked_in')`,
       );
       const departuresRes = await db.query(
         `SELECT COUNT(*)::int AS n FROM bookings
-         WHERE service_type = 'boarding' AND end_date = CURRENT_DATE
+         WHERE service_type = 'boarding' AND end_date = facility_today()
            AND status IN ('confirmed', 'checked_in', 'checked_out')`,
       );
       const weekRes = await db.query(
-        `SELECT d::date AS date,
+        // ::text, not a bare date: the driver returns DATE as a JS Date at
+        // local midnight, and toISOString() on that can land on the day before.
+        `SELECT (d::date)::text AS date,
            COUNT(*) FILTER (
              WHERE b.service_type = 'boarding'
                AND b.start_date <= d AND b.end_date > d
@@ -42,7 +44,7 @@ export async function dashboardRoutes(app: FastifyInstance): Promise<void> {
            COUNT(*) FILTER (
              WHERE b.service_type = 'daycare' AND b.start_date = d
            )::int AS daycare
-         FROM generate_series(CURRENT_DATE, CURRENT_DATE + 6, interval '1 day') AS d
+         FROM generate_series(facility_today(), facility_today() + 6, interval '1 day') AS d
          LEFT JOIN bookings b
            ON b.status IN ('requested', 'confirmed', 'checked_in')
          GROUP BY d ORDER BY d`,
@@ -57,7 +59,7 @@ export async function dashboardRoutes(app: FastifyInstance): Promise<void> {
         arrivalsToday: arrivalsRes.rows[0].n,
         departuresToday: departuresRes.rows[0].n,
         next7Days: weekRes.rows.map((r) => ({
-          date: r.date.toISOString().slice(0, 10),
+          date: r.date,
           boarding: r.boarding,
           daycare: r.daycare,
         })),

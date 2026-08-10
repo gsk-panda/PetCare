@@ -3,10 +3,8 @@ import { Link } from 'react-router-dom';
 import type { CareTask } from '@petcare/shared';
 import { fetchCareLog, type CareLogReport as Report } from '../api';
 import { Icon } from '../components/Icon';
+import { facilityToday, isoDate } from '../facility-time';
 
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function csvCell(value: string): string {
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -41,7 +39,7 @@ function statusPill(t: CareTask) {
 }
 
 export function CareLogReport() {
-  const [date, setDate] = useState(isoDate(new Date()));
+  const [date, setDate] = useState(facilityToday());
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
 
