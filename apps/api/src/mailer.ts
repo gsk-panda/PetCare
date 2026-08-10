@@ -22,7 +22,9 @@ export type Mail = {
 
 export async function sendMail(mail: Mail, log: (msg: string, meta?: unknown) => void): Promise<void> {
   if (!client || !FROM) {
-    log('mailer not configured; message not sent', { to: mail.to, subject: mail.subject });
+    // Recipient only. The subject carries the login code, and an unsent
+    // message is no reason to write one into the log stream.
+    log('mailer not configured; message not sent', { to: mail.to });
     return;
   }
   await client.send(
