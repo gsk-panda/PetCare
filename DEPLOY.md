@@ -22,6 +22,23 @@ healthy.
 ssh ubuntu@boarding.azotech.net 'bash -s' < deploy/remote-deploy.sh
 ```
 
+## Email
+
+Portal login codes go out through SES from `no-reply@boarding.azotech.net`.
+
+A Lightsail instance's metadata role belongs to an AWS-owned account, not
+yours, so it can never be granted access to your SES no matter what policy you
+write. The app therefore uses an explicit credential: IAM user `petcare-ses`,
+whose entire permission is `ses:SendEmail` on the `boarding.azotech.net`
+identity.
+
+That policy carries a second, temporary statement allowing the recipient
+`cmc.1974@outlook.com`. It is there because **in the SES sandbox, SendEmail is
+authorised against the recipient identity as well as the sender** — so a
+resource-scoped policy fails for every address not explicitly listed, which
+does not scale past testing. Production access removes the recipient check;
+delete that statement when it lands.
+
 ## Building
 
 The whole product ships as one container: the built SPA and the API that feeds
