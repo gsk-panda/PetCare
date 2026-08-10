@@ -1,4 +1,4 @@
-Rosa Kim	Owner	rosa@cedarcreek.example
+Rosa Kim	Owner	rosa@cedarcreek.example - xDPXgDjOZbdPOEljRq7LiceL
 Dev Mehta	Manager	dev@cedarcreek.example
 Jordan Price	Front desk	jordan@cedarcreek.example
 Priya Sandoval	Kennel tech	priya@cedarcreek.example
