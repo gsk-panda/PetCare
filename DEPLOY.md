@@ -1,5 +1,29 @@
 # Deploying
 
+## The staging environment
+
+Lightsail, `us-east-1`. `boarding.azotech.net` → `32.196.98.98`.
+
+| Resource | What it is |
+| --- | --- |
+| `petcare-app` | Ubuntu 24.04, 2 GB. nginx terminates TLS and proxies to the container on `127.0.0.1:3001`, so the app cannot be reached directly and TLS cannot be bypassed. |
+| `petcare-db` | Managed PostgreSQL 16, **private mode** — reachable only from Lightsail resources in this account, never from the internet. |
+| `petcare-ip` | Static IP. A Lightsail instance's public address changes on stop/start; DNS points here instead. |
+
+Configuration lives in `/opt/petcare-config/` on the instance: `app.env`
+(root-owned, mode 600), the AWS CA bundle used to verify the database
+certificate, and `staff-password.txt` for the seeded demo accounts.
+
+Deploy with `deploy/remote-deploy.sh`, which pulls master, rebuilds on the
+instance, restarts the service, and fails if the app does not come back
+healthy.
+
+```bash
+ssh ubuntu@boarding.azotech.net 'bash -s' < deploy/remote-deploy.sh
+```
+
+## Building
+
 The whole product ships as one container: the built SPA and the API that feeds
 it, on a single origin. That is deliberate. The staff and portal session
 cookies are `httpOnly; sameSite=lax`, so serving the app from the same origin
