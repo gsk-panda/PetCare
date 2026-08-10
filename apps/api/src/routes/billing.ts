@@ -23,7 +23,9 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     return withTenant(req.tenant.schemaName, async (db) => {
       const { rows: fs } = await db.query(
         `SELECT currency, tax_rate_bps, terminal_provider, terminal_label,
-                terminal_location, terminal_status
+                terminal_location, terminal_status, timezone,
+                to_char(pickup_cutoff, 'HH24:MI') AS pickup_cutoff,
+                to_char(pickup_cutoff, 'HH12:MI AM') AS pickup_cutoff_label
          FROM facility_settings WHERE singleton`,
       );
       const { rows: items } = await db.query(
@@ -34,6 +36,9 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       return {
         currency: s.currency,
         taxRateBps: s.tax_rate_bps,
+        timezone: s.timezone,
+        pickupCutoff: s.pickup_cutoff,
+        pickupCutoffLabel: s.pickup_cutoff_label,
         terminal: {
           provider: s.terminal_provider,
           label: s.terminal_label,
@@ -61,12 +66,17 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       terminalProvider?: string | null;
       terminalLabel?: string | null;
       terminalLocation?: string | null;
+      pickupCutoff?: string;
+      timezone?: string;
     };
   }>('/settings/billing', { preHandler: requireManager }, async (req, reply) => {
     const b = req.body ?? {};
     if (b.taxRateBps !== undefined &&
         (!Number.isInteger(b.taxRateBps) || b.taxRateBps < 0 || b.taxRateBps > 3000)) {
       return reply.code(400).send({ error: 'Tax rate must be between 0 and 30%' });
+    }
+    if (b.pickupCutoff !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(b.pickupCutoff)) {
+      return reply.code(400).send({ error: 'Pickup cutoff must be a time like 11:00' });
     }
     if (b.terminalProvider != null && b.terminalProvider !== 'stripe_terminal') {
       return reply.code(400).send({
@@ -77,6 +87,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     return withTenant(req.tenant.schemaName, async (db) => {
       await db.query(
         `UPDATE facility_settings SET
+           pickup_cutoff = COALESCE($6::time, pickup_cutoff),
+           timezone = COALESCE($7, timezone),
            tax_rate_bps = COALESCE($1, tax_rate_bps),
            terminal_provider = CASE WHEN $2::boolean THEN $3 ELSE terminal_provider END,
            terminal_label = COALESCE($4, terminal_label),
@@ -92,6 +104,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
           b.terminalProvider ?? null,
           b.terminalLabel?.trim() ?? null,
           b.terminalLocation?.trim() ?? null,
+          b.pickupCutoff ?? null,
+          b.timezone?.trim() || null,
         ],
       );
       return { ok: true };
@@ -189,16 +203,16 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
    * What this stay costs, priced from the nights actually stayed rather than
    * the nights booked — an extended or shortened stay bills what happened.
    */
-  app.get<{ Params: { bookingId: string } }>(
-    '/bookings/:bookingId/checkout-quote',
-    async (req, reply) => {
-      return withTenant(req.tenant.schemaName, async (db) => {
-        const quote = await buildQuote(db, req.params.bookingId);
-        if ('error' in quote) return reply.code(quote.code).send({ error: quote.error });
-        return quote;
-      });
-    },
-  );
+  app.get<{
+    Params: { bookingId: string };
+    Querystring: { pickedUpAt?: string };
+  }>('/bookings/:bookingId/checkout-quote', async (req, reply) => {
+    return withTenant(req.tenant.schemaName, async (db) => {
+      const quote = await buildQuote(db, req.params.bookingId, [], req.query.pickedUpAt);
+      if ('error' in quote) return reply.code(quote.code).send({ error: quote.error });
+      return quote;
+    });
+  });
 
   app.post<{
     Params: { bookingId: string };
@@ -208,6 +222,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       adjustmentNote?: string;
       payment?: { method?: string; amountCents?: number; reference?: string };
       note?: string;
+      pickedUpAt?: string;
     };
   }>('/bookings/:bookingId/checkout', async (req, reply) => {
     const b = req.body ?? {};
@@ -221,7 +236,9 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     return withTenant(req.tenant.schemaName, async (db) => {
       await db.query('BEGIN');
       try {
-        const quote = await buildQuote(db, req.params.bookingId, b.serviceItemIds ?? []);
+        const quote = await buildQuote(
+          db, req.params.bookingId, b.serviceItemIds ?? [], b.pickedUpAt,
+        );
         if ('error' in quote) {
           await db.query('ROLLBACK');
           return reply.code(quote.code).send({ error: quote.error });
@@ -283,11 +300,14 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
 
         // Only close the stay once the money side has been written, so a
         // failure here never leaves a dog checked out with no invoice.
+        // Record when the dog actually left: it is what makes a late-pickup
+        // charge answerable if the owner queries it later.
         const { rows: closed } = await db.query(
-          `UPDATE bookings SET status = 'checked_out'
+          `UPDATE bookings SET status = 'checked_out',
+             picked_up_at = COALESCE($2::timestamptz, now())
            WHERE id = $1 AND status = 'checked_in'
            RETURNING pet_id`,
-          [req.params.bookingId],
+          [req.params.bookingId, b.pickedUpAt ?? null],
         );
         if (!closed[0]) {
           await db.query('ROLLBACK');
@@ -387,6 +407,7 @@ async function buildQuote(
   db: { query: (sql: string, params?: unknown[]) => Promise<{ rows: any[] }> },
   bookingId: string,
   serviceItemIds: string[] = [],
+  pickedUpAt?: string,
 ): Promise<
   | { error: string; code: number }
   | {
@@ -394,6 +415,7 @@ async function buildQuote(
       serviceType: string; startDate: string; endDate: string; nights: number;
       runLabel: string; taxRateBps: number; lines: QuoteLine[];
       subtotalCents: number; taxCents: number; totalCents: number;
+      pickupCutoff: string; afterCutoff: boolean; timezone: string;
     }
 > {
   const { rows } = await db.query(
@@ -422,8 +444,21 @@ async function buildQuote(
   );
   if (existing[0]) return { error: 'This stay has already been invoiced', code: 409 };
 
+  // Evaluate the cutoff against the facility's own clock. Comparing an 11:00
+  // cutoff to UTC now() would bill an extra day to anyone collecting after 6am
+  // local, which is most of the morning.
   const { rows: fs } = await db.query(
-    'SELECT tax_rate_bps FROM facility_settings WHERE singleton',
+    `SELECT tax_rate_bps, pickup_cutoff, timezone,
+            to_char(pickup_cutoff, 'HH12:MI AM') AS cutoff_label,
+            -- ::text, not a bare date: the driver hands back a JS Date whose
+            -- string form is not ISO, which silently breaks day arithmetic.
+            ((COALESCE($1::timestamptz, now()) AT TIME ZONE timezone)::date)::text
+              AS local_pickup_date,
+            (COALESCE($1::timestamptz, now()) AT TIME ZONE timezone)::time  AS local_pickup_time,
+            ((COALESCE($1::timestamptz, now()) AT TIME ZONE timezone)::time > pickup_cutoff)
+              AS after_cutoff
+     FROM facility_settings WHERE singleton`,
+    [pickedUpAt ?? null],
   );
   const taxRateBps = fs[0]?.tax_rate_bps ?? 0;
 
@@ -441,6 +476,32 @@ async function buildQuote(
       amountCents: nights * rate,
       taxable: true,
     });
+
+    // The pickup day is free if the run is back in service that morning.
+    // Past the cutoff it cannot be re-let, so it is charged — and a dog
+    // collected days late owes for each of those days too.
+    const localPickup: string = fs[0].local_pickup_date;
+    const daysBeyond = Math.max(
+      0,
+      Math.round(
+        (Date.parse(`${localPickup}T12:00:00Z`) - Date.parse(`${b.end_date}T12:00:00Z`)) /
+          86_400_000,
+      ),
+    );
+    const extraDays = daysBeyond + (fs[0].after_cutoff ? 1 : 0);
+    if (extraDays > 0) {
+      lines.push({
+        kind: 'boarding',
+        description:
+          daysBeyond > 0
+            ? `Late collection · ${daysBeyond + (fs[0].after_cutoff ? 1 : 0)} day${extraDays === 1 ? '' : 's'} past ${b.end_date}`
+            : `Pickup after ${fs[0].cutoff_label} · pickup day charged`,
+        quantity: extraDays,
+        unitCents: rate,
+        amountCents: extraDays * rate,
+        taxable: true,
+      });
+    }
   } else {
     lines.push({
       kind: 'daycare',
@@ -507,5 +568,8 @@ async function buildQuote(
     subtotalCents: subtotal,
     taxCents: tax,
     totalCents: subtotal + tax,
+    pickupCutoff: fs[0].cutoff_label,
+    afterCutoff: Boolean(fs[0].after_cutoff),
+    timezone: fs[0].timezone,
   };
 }

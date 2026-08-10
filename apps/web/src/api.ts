@@ -73,6 +73,8 @@ export interface BoardOccupant {
   avatarColor: string;
   hasMeds: boolean;
   isNewClient: boolean;
+  /** No prior completed stay — true for a returning client's new dog too. */
+  isFirstStay: boolean;
   nightNumber: number | null;
   totalNights: number | null;
 }
@@ -265,6 +267,11 @@ export interface ServiceItem {
 export interface BillingSettings {
   currency: string;
   taxRateBps: number;
+  timezone: string;
+  /** 24-hour "HH:MM" for the input. */
+  pickupCutoff: string;
+  /** Human form, e.g. "11:00 AM". */
+  pickupCutoffLabel: string;
   terminal: {
     provider: string | null;
     label: string | null;
@@ -290,6 +297,8 @@ export const fetchBillingSettings = () =>
 
 export const updateBillingSettings = (body: {
   taxRateBps?: number;
+  pickupCutoff?: string;
+  timezone?: string;
   terminalProvider?: string | null;
   terminalLabel?: string;
   terminalLocation?: string;
@@ -353,6 +362,9 @@ export interface CheckoutQuote {
   subtotalCents: number;
   taxCents: number;
   totalCents: number;
+  pickupCutoff: string;
+  afterCutoff: boolean;
+  timezone: string;
 }
 
 export const fetchCheckoutQuote = (bookingId: string) =>
@@ -641,6 +653,7 @@ export interface CheckInChecklist {
   medsConfirmed?: boolean;
   vaccinesVerified?: boolean;
   signatureCaptured?: boolean;
+  allergiesChecked?: boolean;
   intake?: StayIntake;
   serviceItemIds?: string[];
 }

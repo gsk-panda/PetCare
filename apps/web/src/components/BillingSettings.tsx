@@ -111,8 +111,23 @@ export function BillingSettings({
               <em>%</em>
             </div>
           </label>
+          <label className="inline-field" style={{ maxWidth: 170 }}>
+            <span>Pickup by</span>
+            <input
+              type="time"
+              defaultValue={data.pickupCutoff}
+              disabled={!canEdit}
+              onBlur={(e) => {
+                if (e.target.value && e.target.value !== data.pickupCutoff) {
+                  void run('cutoff', () => updateBillingSettings({ pickupCutoff: e.target.value }));
+                }
+              }}
+            />
+          </label>
           <p className="field-note">
-            Applied to boarding, daycare and taxable extras. Adjustments are never taxed.
+            Tax applies to boarding, daycare and taxable extras; adjustments are never taxed.
+            Collect after {data.pickupCutoffLabel} and the pickup day is charged as a full day,
+            judged on {data.timezone.replace('_', ' ')} time.
           </p>
         </div>
 

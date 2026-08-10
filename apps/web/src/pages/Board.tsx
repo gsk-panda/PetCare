@@ -231,8 +231,8 @@ export function Board() {
                       {cell.run.code}
                       <span className="chips">
                         {cell.occupants[0]?.hasMeds && <span className="state-chip med">Med</span>}
-                        {!cell.occupants[0]?.hasMeds && cell.occupants[0]?.isNewClient && (
-                          <span className="state-chip new">New</span>
+                        {cell.occupants[0]?.isFirstStay && (
+                          <span className="state-chip first" title="First stay with us">1st</span>
                         )}
                         {state === 'arr' && <span className="state-chip arr">In</span>}
                         {state === 'dep' && <span className="state-chip dep">Out</span>}

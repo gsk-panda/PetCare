@@ -69,6 +69,7 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
   const [feedingConfirmed, setFeedingConfirmed] = useState(false);
   const [medsConfirmed, setMedsConfirmed] = useState(false);
   const [signatureCaptured, setSignatureCaptured] = useState(false);
+  const [allergiesChecked, setAllergiesChecked] = useState(false);
 
   // Intake
   const [belongings, setBelongings] = useState<string[]>([]);
@@ -170,9 +171,13 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
   const namedMeds = meds.filter((m) => m.name.trim());
   const medsIncomplete = needsMeds && namedMeds.length === 0;
 
+  // Allergies are confirmed explicitly even when none are recorded: "nothing
+  // on file" and "asked, and there are none" are different facts, and the
+  // difference is what stops a peanut-allergic dog getting a peanut treat.
   const ready =
     Boolean(pet) &&
     vaccinesVerified &&
+    allergiesChecked &&
     feedingConfirmed &&
     signatureCaptured &&
     !medsIncomplete &&
@@ -194,6 +199,7 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
         feedingConfirmed,
         medsConfirmed,
         signatureCaptured,
+        allergiesChecked,
         serviceItemIds: services,
         intake: {
           belongings: belongingsText || undefined,
@@ -293,9 +299,25 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
                   </small>
                 </div>
               )}
-              {pet.allergyNotes && (
-                <div className="allergy-note"><b>Allergy</b> · {pet.allergyNotes}</div>
-              )}
+              <label className={pet.allergyNotes ? 'check-row allergy' : 'check-row'}>
+                <input
+                  type="checkbox"
+                  checked={allergiesChecked}
+                  onChange={(e) => setAllergiesChecked(e.target.checked)}
+                />
+                <span>
+                  <b>
+                    {pet.allergyNotes
+                      ? 'Allergies confirmed with the owner'
+                      : 'Asked about allergies — none'}
+                  </b>
+                  <small>
+                    {pet.allergyNotes
+                      ? pet.allergyNotes
+                      : 'Nothing on file. Confirm out loud before any treat goes in.'}
+                  </small>
+                </span>
+              </label>
 
               {/* --- Verification ------------------------------------------ */}
               <label className="check-row">
@@ -317,6 +339,16 @@ export function CheckInPanel({ occupant, runCode, onClose, onCheckedIn }: Props)
                   </small>
                 </span>
               </label>
+
+              {occupant.isFirstStay && (
+                <div className="first-stay">
+                  <b>First stay with us</b>
+                  <small>
+                    Nobody here knows this dog yet. Walk the owner through drop-off, and write
+                    down anything the next person would want to know.
+                  </small>
+                </div>
+              )}
 
               {previous && (
                 <div className={prefilled ? 'prefill-note done' : 'prefill-note'}>

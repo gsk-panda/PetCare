@@ -30,6 +30,7 @@ interface CheckInBody {
   feedingConfirmed?: boolean;
   medsConfirmed?: boolean;
   signatureCaptured?: boolean;
+  allergiesChecked?: boolean;
   intake?: StayIntakeInput;
   /** Extras agreed at drop-off; billed at check-out. */
   serviceItemIds?: string[];
@@ -54,6 +55,7 @@ interface BoardRow {
   avatar_color: string | null;
   has_meds: boolean | null;
   is_new_client: boolean | null;
+  is_first_stay: boolean | null;
   night_number: number | null;
   total_nights: number | null;
 }
@@ -76,6 +78,13 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
            p.id AS pet_id, p.name AS pet_name, p.breed, p.avatar_color,
            (p.medication_notes IS NOT NULL) AS has_meds,
            (c.created_at > now() - interval '30 days') AS is_new_client,
+           -- A returning client's second dog is still a first-time boarder,
+           -- so this asks about the pet's history, not the account's age.
+           NOT EXISTS (
+             SELECT 1 FROM bookings prior
+             WHERE prior.pet_id = p.id AND prior.status = 'checked_out'
+               AND prior.id <> b.id
+           ) AS is_first_stay,
            CASE WHEN b.service_type = 'boarding'
                 THEN ($1::date - b.start_date) + 1 END AS night_number,
            CASE WHEN b.service_type = 'boarding'
@@ -136,6 +145,7 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
             avatarColor: row.avatar_color,
             hasMeds: row.has_meds,
             isNewClient: row.is_new_client,
+            isFirstStay: row.is_first_stay,
             nightNumber: row.night_number,
             totalNights: row.total_nights,
           });
@@ -168,6 +178,7 @@ export async function boardRoutes(app: FastifyInstance): Promise<void> {
     // what was confirmed, while the structured detail goes to stay_intake.
     const confirmed = [
       b.vaccinesVerified ? 'vaccines verified' : null,
+      b.allergiesChecked ? 'allergies confirmed' : null,
       b.feedingConfirmed ? 'feeding plan confirmed' : null,
       b.medsConfirmed ? 'medication confirmed' : null,
       b.signatureCaptured ? 'owner signature captured' : null,

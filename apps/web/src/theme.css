@@ -677,6 +677,20 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 }
 .ok-note { color: var(--good); font-weight: 600; }
 
+.state-chip.first { background: var(--accent); color: var(--accent-ink); }
+
+.first-stay {
+  background: var(--accent); color: var(--accent-ink);
+  border-radius: var(--r-md); padding: var(--s-3);
+}
+.first-stay b { display: block; font-size: var(--t-sm); font-weight: 700; }
+.first-stay small { display: block; font-size: var(--t-xs); margin-top: 2px; opacity: 0.85; }
+
+/* An allergy on file is the one checklist row that should catch the eye. */
+.check-row.allergy { border-color: var(--bad); background: var(--bad-bg); }
+.check-row.allergy b { color: var(--bad); }
+.check-row.allergy small { color: #8c3030; }
+
 .prefill-note {
   display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
   background: var(--info-bg); border: 1px solid #c2d6ea;

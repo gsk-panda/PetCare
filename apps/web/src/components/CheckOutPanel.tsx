@@ -180,6 +180,16 @@ export function CheckOutPanel({
                 </tbody>
               </table>
 
+              {quote.afterCutoff && (
+                <div className="delta-note down">
+                  <b>Collected after {quote.pickupCutoff}</b>
+                  <small>
+                    The run cannot be re-let today, so the pickup day is charged. It is on the
+                    bill as its own line.
+                  </small>
+                </div>
+              )}
+
               <fieldset className="intake">
                 <legend>Add to this visit</legend>
                 <div className="chipset">
