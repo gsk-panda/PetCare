@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+.claude
+.impeccable
+screenshots
+mockups
+*.log
+.env
+.env.*

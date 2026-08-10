@@ -71,16 +71,37 @@ export async function migrateTenantSchema(schemaName: string): Promise<string[]>
   }
 }
 
-/** Bring the platform schema and every registered tenant schema up to date. */
-export async function migrateAll(log: (msg: string) => void = () => {}): Promise<void> {
-  const platformApplied = await migratePlatform();
-  log(`platform: ${platformApplied.length ? platformApplied.join(', ') : 'up to date'}`);
+/**
+ * Arbitrary but fixed: every process that migrates must agree on it, and
+ * nothing else in the database may use it.
+ */
+const MIGRATION_LOCK_KEY = 4_021_968;
 
-  const { rows: tenants } = await pool.query<{ slug: string; schema_name: string }>(
-    'SELECT slug, schema_name FROM platform.tenants ORDER BY created_at',
-  );
-  for (const t of tenants) {
-    const applied = await migrateTenantSchema(t.schema_name);
-    log(`tenant ${t.slug}: ${applied.length ? applied.join(', ') : 'up to date'}`);
+/**
+ * Bring the platform schema and every registered tenant schema up to date.
+ *
+ * Serialised on a session-level advisory lock, because migrations now run at
+ * container start: two instances rolling out together would otherwise race
+ * the same CREATE TABLE, and the loser would crash-loop. The second one
+ * blocks, then finds everything already applied.
+ */
+export async function migrateAll(log: (msg: string) => void = () => {}): Promise<void> {
+  const lock = await pool.connect();
+  try {
+    await lock.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_KEY]);
+
+    const platformApplied = await migratePlatform();
+    log(`platform: ${platformApplied.length ? platformApplied.join(', ') : 'up to date'}`);
+
+    const { rows: tenants } = await pool.query<{ slug: string; schema_name: string }>(
+      'SELECT slug, schema_name FROM platform.tenants ORDER BY created_at',
+    );
+    for (const t of tenants) {
+      const applied = await migrateTenantSchema(t.schema_name);
+      log(`tenant ${t.slug}: ${applied.length ? applied.join(', ') : 'up to date'}`);
+    }
+  } finally {
+    await lock.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK_KEY]);
+    lock.release();
   }
 }

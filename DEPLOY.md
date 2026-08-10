@@ -1,0 +1,55 @@
+# Deploying
+
+The whole product ships as one container: the built SPA and the API that feeds
+it, on a single origin. That is deliberate. The staff and portal session
+cookies are `httpOnly; sameSite=lax`, so serving the app from the same origin
+as the API means the deployed system behaves exactly like the dev proxy, with
+no CORS configuration to get subtly wrong.
+
+```bash
+docker build -t petcare .
+```
+
+## Runtime configuration
+
+| Variable | Required | What it does |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | Postgres connection string. |
+| `DATABASE_CA_FILE` | managed DB | Path to the AWS CA bundle. Set this and the TLS certificate is verified. |
+| `DATABASE_SSL` | no | `insecure` to use TLS without verifying the certificate. A stopgap, not a destination. |
+| `PGPOOL_MAX` | no | Pool size, default 10. A 1 GB managed Postgres allows roughly 90 connections in total. |
+| `MIGRATE_ON_BOOT` | no | `true` runs every pending migration before the server listens. |
+| `CORS_ORIGIN` | no | Comma-separated allowlist. Omit when the app is served from this same origin. |
+| `PORT` | no | Default 3001. |
+| `NODE_ENV` | yes | `production` — turns on `secure` session cookies, which requires HTTPS in front. |
+| `STRIPE_SECRET_KEY` | no | Enables the card reader. Deliberately not stored in the database, so it never appears in a backup. |
+| `WEB_DIST` | no | Overrides where the built SPA is read from. |
+
+`GET /health` returns `{"ok":true}` and is what the container healthcheck and
+any load balancer should poll.
+
+## Migrations
+
+`MIGRATE_ON_BOOT=true` applies `migrations/platform` once and
+`migrations/tenant` across every registered tenant schema, then starts serving.
+A deployment can therefore never serve code that is ahead of its schema.
+
+Concurrent starts are safe: the runner takes a Postgres advisory lock, so a
+second instance waits and then finds everything already applied. Migrations
+are still forward-only — there is no down step, so a rollback means deploying
+an image whose code tolerates the newer schema.
+
+## Before this faces real customers
+
+These are known and tracked, and each one is load-bearing:
+
+- **Portal login does not work in production.** The login code is emailed by
+  nobody; outside production the API returns it in the response instead, and
+  that path is off when `NODE_ENV=production`. Needs SES.
+- **Pet photos are data URLs inside Postgres.** They belong in S3 before the
+  database and every one of its backups start carrying image bytes.
+- **Today is derived from UTC** in care rounds and the facility board. On a UTC
+  server, an Eastern facility's rounds reset at 8pm. `facility_settings.timezone`
+  exists for this; the queries have not moved onto it yet.
+- **Root AWS credentials.** Deployment should use a scoped IAM role, and the
+  root access keys should be deleted.

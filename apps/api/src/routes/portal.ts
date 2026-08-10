@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { withTenant } from '../db.js';
+import { loginCodeMail, mailerConfigured, sendMail } from '../mailer.js';
 import {
   clearSessionCookie,
   issueLoginCode,
@@ -23,8 +24,13 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_PHOTO_BYTES = 700_000;
 const PHOTO_PREFIX = /^data:image\/(png|jpe?g|webp);base64,/;
 
-/** Dev convenience: no mailer is wired, so the code comes back in the response. */
-const EXPOSE_CODES = process.env.NODE_ENV !== 'production';
+/**
+ * With no mailer configured there is no other way to get the code, so it comes
+ * back in the response. Gated on the mailer rather than on NODE_ENV: a
+ * deployment that forgot SES_FROM should fail visibly at the login screen, not
+ * quietly start handing out other people's sign-in codes over HTTP.
+ */
+const EXPOSE_CODES = !mailerConfigured() && process.env.NODE_ENV !== 'production';
 
 export async function portalRoutes(app: FastifyInstance): Promise<void> {
   await app.register(publicRoutes);
@@ -47,6 +53,18 @@ async function publicRoutes(app: FastifyInstance): Promise<void> {
       return { sent: true };
     }
     req.log.info({ identityId: issued.identityId }, 'portal login code issued');
+
+    try {
+      await sendMail(
+        loginCodeMail(email, issued.code, req.tenant.name),
+        (msg, meta) => req.log.warn(meta ?? {}, msg),
+      );
+    } catch (err) {
+      // Deliberately still {sent: true}. Failing loudly only for addresses that
+      // exist would turn this endpoint into a way to ask who boards here.
+      req.log.error({ err, identityId: issued.identityId }, 'portal login code email failed');
+    }
+
     return EXPOSE_CODES ? { sent: true, devCode: issued.code } : { sent: true };
   });
 
