@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { facilityToday, withTenant } from '../db.js';
+import { createDaycareDays } from '../daycare-booking.js';
 import { loginCodeMail, mailerConfigured, sendMail } from '../mailer.js';
 import {
   clearSessionCookie,
@@ -355,9 +356,39 @@ async function protectedRoutes(app: FastifyInstance): Promise<void> {
     Body: {
       petId?: string; serviceType?: 'boarding' | 'daycare';
       startDate?: string; endDate?: string; notes?: string;
+      /** Daycare only: request several separate days at once. */
+      dates?: string[];
     };
   }>('/portal/bookings', async (req, reply) => {
     const { petId, serviceType, startDate, endDate, notes } = req.body ?? {};
+
+    // Several daycare days is several requests, made in one go. No run is
+    // assigned — the desk still places these, exactly as with a single day.
+    if (serviceType === 'daycare' && req.body?.dates?.length) {
+      if (!petId) return reply.code(400).send({ error: 'Choose a pet' });
+      const today = await facilityToday(req.tenant.schemaName);
+      return withTenant(req.tenant.schemaName, async (db) => {
+        const { rows: pet } = await db.query(
+          'SELECT id FROM pets WHERE id = $1 AND client_id = $2',
+          [petId, req.portal.clientId],
+        );
+        if (!pet[0]) return reply.code(404).send({ error: 'Pet not found' });
+
+        const result = await createDaycareDays(db, {
+          dates: req.body?.dates ?? [],
+          petId,
+          clientId: req.portal.clientId,
+          notes,
+          status: 'requested',
+          source: 'portal',
+          today,
+        });
+        if ('error' in result) return reply.code(result.code).send({ error: result.error });
+        reply.code(result.created.length ? 201 : 409);
+        return result;
+      });
+    }
+
     const problem = validateDates(
       serviceType,
       startDate,

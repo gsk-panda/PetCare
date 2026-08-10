@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { PortalData } from './PortalApp';
 import { Avatar, StatusPill } from './PortalHome';
 import { StayLogView } from './StayLogView';
+import { DayPicker } from '../components/DayPicker';
 import { cancelBooking, changeBooking, createBooking, type PortalBooking } from './api';
 import { facilityToday, shiftDate } from '../facility-time';
 
@@ -175,6 +176,8 @@ function BookingSheet({
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [days, setDays] = useState<string[]>([existing?.startDate ?? shiftDate(today, 1)]);
+  const [skipped, setSkipped] = useState<Array<{ date: string; reason: string }>>([]);
 
   const effectiveEnd = serviceType === 'daycare' ? startDate : endDate;
 
@@ -185,6 +188,21 @@ function BookingSheet({
     try {
       if (existing) {
         await changeBooking(existing.id, { startDate, endDate: effectiveEnd, notes });
+      } else if (serviceType === 'daycare') {
+        const result = await createBooking({
+          petId,
+          serviceType,
+          startDate: days[0] ?? today,
+          endDate: days[0] ?? today,
+          notes,
+          dates: days,
+        });
+        if (result.skipped?.length) {
+          setSkipped(result.skipped);
+          setDays((d) => d.filter((x) => result.skipped?.some((s) => s.date === x)));
+          await onSaved();
+          return;
+        }
       } else {
         await createBooking({ petId, serviceType, startDate, endDate: effectiveEnd, notes });
       }
@@ -244,35 +262,55 @@ function BookingSheet({
             </>
           )}
 
-          <div className="pt-field-row">
+          {serviceType === 'daycare' && !existing ? (
             <label className="pt-field">
-              <span>{serviceType === 'daycare' ? 'Date' : 'Drop off'}</span>
-              <input
-                type="date"
-                min={today}
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  if (serviceType === 'boarding' && endDate <= e.target.value) {
-                    setEndDate(shiftDate(e.target.value, 1));
-                  }
-                }}
-                required
-              />
+              <span>Which days?</span>
+              <DayPicker selected={days} onChange={setDays} minDate={today} />
             </label>
-            {serviceType === 'boarding' && (
+          ) : (
+            <div className="pt-field-row">
               <label className="pt-field">
-                <span>Pick up</span>
+                <span>{serviceType === 'daycare' ? 'Date' : 'Drop off'}</span>
                 <input
                   type="date"
-                  min={shiftDate(startDate, 1)}
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  min={today}
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    if (serviceType === 'boarding' && endDate <= e.target.value) {
+                      setEndDate(shiftDate(e.target.value, 1));
+                    }
+                  }}
                   required
                 />
               </label>
-            )}
-          </div>
+              {serviceType === 'boarding' && (
+                <label className="pt-field">
+                  <span>Pick up</span>
+                  <input
+                    type="date"
+                    min={shiftDate(startDate, 1)}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    required
+                  />
+                </label>
+              )}
+            </div>
+          )}
+
+          {skipped.length > 0 && (
+            <div className="pt-error inline">
+              <b>We booked the rest. These days we could not:</b>
+              <ul style={{ margin: '4px 0 0 1rem' }}>
+                {skipped.map((s) => (
+                  <li key={s.date}>
+                    {fmt(s.date)} � {s.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <label className="pt-field">
             <span>Anything we should know?</span>
@@ -291,7 +329,13 @@ function BookingSheet({
           </p>
 
           <button className="pt-btn" type="submit" disabled={busy || !petId}>
-            {busy ? 'Sending…' : existing ? 'Save changes' : 'Request stay'}
+            {busy
+              ? 'Sending…'
+              : existing
+                ? 'Save changes'
+                : serviceType === 'daycare' && days.length > 1
+                  ? `Request ${days.length} days`
+                  : 'Request stay'}
           </button>
         </form>
       </div>

@@ -749,6 +749,40 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
   font-size: var(--t-xs); color: var(--brand-deep);
 }
 .delta-note.down { background: var(--warn-bg); color: var(--warn); }
+.daypicker {
+  border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-3);
+  background: var(--surface);
+}
+.daypicker-hd {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-2);
+  margin-bottom: var(--s-2);
+}
+.daypicker-hd b { font-size: var(--t-sm); }
+.daypicker-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+}
+.daypicker-dow {
+  text-align: center; font-size: var(--t-xs); color: var(--ink-3);
+  font-weight: 600; padding-bottom: 2px;
+}
+.daypicker-day {
+  /* Square-ish and finger-sized: this gets used at the desk on a tablet. */
+  aspect-ratio: 1; min-height: 34px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--ink);
+  font-size: var(--t-xs); font-weight: 600; cursor: pointer;
+}
+.daypicker-day:hover:not(:disabled) { border-color: var(--brand); background: var(--brand-tint); }
+.daypicker-day.on {
+  background: var(--brand); border-color: var(--brand); color: #fff;
+}
+.daypicker-day:disabled { color: var(--ink-3); opacity: 0.4; cursor: default; }
+.daypicker-ft {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-2);
+  margin-top: var(--s-3); font-size: var(--t-xs); color: var(--ink-3); flex-wrap: wrap;
+}
+.daypicker-actions { display: flex; gap: 4px; }
+
 .delta-note b { display: block; font-size: var(--t-sm); }
 .delta-note small { display: block; margin-top: 2px; }
 /* The waiver control sits with the note it acts on, not in the button row --

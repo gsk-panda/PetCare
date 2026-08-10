@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { facilityToday, withTenant } from '../db.js';
+import { createDaycareDays } from '../daycare-booking.js';
 
 export async function bookingRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Querystring: { from?: string; to?: string } }>('/bookings', async (req) => {
@@ -183,9 +184,32 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
       endDate: string;
       runId?: string;
       notes?: string;
+      /** Daycare only: book several separate days in one go. */
+      dates?: string[];
     };
   }>('/bookings', async (req, reply) => {
     const { petId, serviceType, startDate, endDate, runId, notes } = req.body;
+
+    // Daycare stays one booking per day — the board, the calendar and every
+    // capacity check assume it. Booking several days is therefore several
+    // bookings, made together rather than one at a time at the desk.
+    if (serviceType === 'daycare' && req.body.dates?.length) {
+      return withTenant(req.tenant.schemaName, async (db) => {
+        const result = await createDaycareDays(db, {
+          dates: req.body.dates ?? [],
+          petId,
+          runId,
+          notes,
+          status: 'confirmed',
+          source: 'staff',
+          today: await facilityToday(req.tenant.schemaName),
+        });
+        if ('error' in result) return reply.code(result.code).send({ error: result.error });
+        reply.code(result.created.length ? 201 : 409);
+        return result;
+      });
+    }
+
     if (!petId || !serviceType || !startDate || !endDate) {
       return reply.code(400).send({ error: 'petId, serviceType, startDate, endDate are required' });
     }

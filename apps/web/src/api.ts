@@ -576,10 +576,20 @@ export interface NewBooking {
   endDate: string;
   runId?: string;
   notes?: string;
+  /** Daycare only. When present the server books one day per entry. */
+  dates?: string[];
+}
+
+/** What came back from booking a set of daycare days. */
+export interface DaycareDaysResult {
+  created: Array<{ date: string; id: string }>;
+  skipped: Array<{ date: string; reason: string }>;
 }
 
 /** Throws with the server's message so the form can show conflicts verbatim. */
-export async function createBooking(booking: NewBooking): Promise<{ id: string }> {
+export async function createBooking(
+  booking: NewBooking,
+): Promise<{ id?: string } & Partial<DaycareDaysResult>> {
   const res = await fetch(`/api/${TENANT_SLUG}/bookings`, {
     method: 'POST',
     credentials: 'include',
@@ -590,7 +600,7 @@ export async function createBooking(booking: NewBooking): Promise<{ id: string }
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error ?? `Could not save the booking (${res.status})`);
   }
-  return res.json() as Promise<{ id: string }>;
+  return res.json() as Promise<{ id?: string } & Partial<DaycareDaysResult>>;
 }
 
 export interface StayMedication {

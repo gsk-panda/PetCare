@@ -163,13 +163,24 @@ export const addVaccination = (petId: string, vaccine: string, expiresOn: string
 
 export const fetchBookings = () => call<{ bookings: PortalBooking[] }>('/bookings');
 
+export interface DaycareDaysResult {
+  created: Array<{ date: string; id: string }>;
+  skipped: Array<{ date: string; reason: string }>;
+}
+
 export const createBooking = (body: {
   petId: string;
   serviceType: 'boarding' | 'daycare';
   startDate: string;
   endDate: string;
   notes?: string;
-}) => call<{ id: string }>('/bookings', { method: 'POST', body: JSON.stringify(body) });
+  /** Daycare only: one request per day, sent together. */
+  dates?: string[];
+}) =>
+  call<{ id?: string } & Partial<DaycareDaysResult>>('/bookings', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 
 export const changeBooking = (
   bookingId: string,

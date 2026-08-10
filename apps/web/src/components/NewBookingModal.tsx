@@ -8,6 +8,7 @@ import {
 } from '../api';
 import { Icon } from './Icon';
 import { facilityToday, isoDate } from '../facility-time';
+import { DayPicker } from './DayPicker';
 
 
 function addDays(iso: string, n: number): string {
@@ -29,6 +30,7 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
   const [petId, setPetId] = useState('');
   const [startDate, setStartDate] = useState(initialDate ?? today);
   const [endDate, setEndDate] = useState(addDays(initialDate ?? today, 1));
+  const [days, setDays] = useState<string[]>(initialDate ? [initialDate] : [today]);
   const [runId, setRunId] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -37,9 +39,13 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [skipped, setSkipped] = useState<Array<{ date: string; reason: string }>>([]);
 
-  // Daycare is a single day; keep endDate in step so the API contract holds.
-  const effectiveEnd = serviceType === 'daycare' ? startDate : endDate;
+  // Daycare books each chosen day separately. Availability is checked against
+  // the first of them, which is what the run picker below is offering.
+  const firstDay = days[0] ?? today;
+  const effectiveStart = serviceType === 'daycare' ? firstDay : startDate;
+  const effectiveEnd = serviceType === 'daycare' ? firstDay : endDate;
 
   useEffect(() => {
     fetchPets()
@@ -48,9 +54,9 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
   }, []);
 
   useEffect(() => {
-    if (effectiveEnd < startDate) return;
+    if (effectiveEnd < effectiveStart) return;
     let stale = false;
-    fetchRuns(startDate, effectiveEnd, serviceType)
+    fetchRuns(effectiveStart, effectiveEnd, serviceType)
       .then((r) => {
         if (stale) return;
         setRuns(r.runs);
@@ -63,7 +69,7 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
     return () => {
       stale = true;
     };
-  }, [startDate, effectiveEnd, serviceType]);
+  }, [effectiveStart, effectiveEnd, serviceType]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -79,7 +85,11 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
   }, [serviceType, startDate, endDate]);
 
   const invalidRange = serviceType === 'boarding' && nights < 1;
-  const canSubmit = Boolean(petId) && !invalidRange && !saving;
+  const canSubmit =
+    Boolean(petId) &&
+    !invalidRange &&
+    !saving &&
+    (serviceType === 'boarding' || days.length > 0);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,14 +97,23 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
     setSaving(true);
     setSubmitError(null);
     try {
-      await createBooking({
+      const result = await createBooking({
         petId,
         serviceType,
-        startDate,
+        startDate: effectiveStart,
         endDate: effectiveEnd,
         runId: runId || undefined,
         notes: notes.trim() || undefined,
+        ...(serviceType === 'daycare' ? { dates: days } : {}),
       });
+      // Some days can be full or already booked while others go through. Say
+      // which, rather than reporting a clean success for a partial one.
+      if (result.skipped?.length) {
+        setSkipped(result.skipped);
+        setDays((d) => d.filter((x) => result.skipped?.some((s) => s.date === x)));
+        onCreated();
+        return;
+      }
       onCreated();
       onClose();
     } catch (err) {
@@ -159,23 +178,26 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
                 </select>
               </label>
 
-              <div className="field-row">
+              {serviceType === 'daycare' ? (
                 <label className="field">
-                  <span>{serviceType === 'daycare' ? 'Date' : 'Check in'}</span>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setStartDate(next);
-                      if (serviceType === 'boarding' && endDate <= next) {
-                        setEndDate(addDays(next, 1));
-                      }
-                    }}
-                    required
-                  />
+                  <span>Days</span>
+                  <DayPicker selected={days} onChange={setDays} />
                 </label>
-                {serviceType === 'boarding' && (
+              ) : (
+                <div className="field-row">
+                  <label className="field">
+                    <span>Check in</span>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setStartDate(next);
+                        if (endDate <= next) setEndDate(addDays(next, 1));
+                      }}
+                      required
+                    />
+                  </label>
                   <label className="field">
                     <span>Check out</span>
                     <input
@@ -186,15 +208,38 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
                       required
                     />
                   </label>
-                )}
-              </div>
+                </div>
+              )}
 
-              {serviceType === 'boarding' && (
+              {serviceType === 'boarding' ? (
                 <p className="field-note">
                   {invalidRange
                     ? 'A stay must cover at least one night.'
                     : `${nights} night${nights === 1 ? '' : 's'}`}
                 </p>
+              ) : (
+                <p className="field-note">
+                  Each day is booked separately. The play group below is offered for{' '}
+                  {new Date(firstDay + 'T12:00:00').toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                  ; a day that is full will be reported rather than silently dropped.
+                </p>
+              )}
+
+              {skipped.length > 0 && (
+                <div className="form-error">
+                  <b>Booked the rest. These days were not:</b>
+                  <ul style={{ margin: '4px 0 0 var(--s-4)' }}>
+                    {skipped.map((s) => (
+                      <li key={s.date}>
+                        {s.date} � {s.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
 
               <label className="field">
@@ -238,7 +283,11 @@ export function NewBookingModal({ onClose, onCreated, initialDate }: Props) {
                 Cancel
               </button>
               <button type="submit" className="btn" disabled={!canSubmit}>
-                {saving ? 'Saving…' : 'Create booking'}
+                {saving
+                  ? 'Saving…'
+                  : serviceType === 'daycare' && days.length > 1
+                    ? `Book ${days.length} days`
+                    : 'Create booking'}
               </button>
             </div>
           </form>
