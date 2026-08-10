@@ -1080,6 +1080,116 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
    ========================================================================= */
 .print-head { display: none; }
 .tbl.report td { vertical-align: top; }
+/* =========================================================================
+   Phones and small tablets
+
+   The staff app is desktop-first by design — the desk runs on a monitor. But
+   care rounds and the facility board get used on a phone while holding a dog,
+   and a 192px sidebar on a 390px screen leaves a column too narrow to read.
+   Below this breakpoint the sidebar becomes a bottom bar, matching the
+   pattern the client portal already uses.
+   ========================================================================= */
+.phonenav { display: none; }
+.phonemore-scrim { display: none; }
+
+@media (max-width: 768px) {
+  .side { display: none; }
+
+  /* Room for the bottom bar, plus the home indicator on a modern iPhone. */
+  .main { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+
+  .phonenav {
+    position: fixed; inset: auto 0 0 0; z-index: 40;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    background: var(--chrome); border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .phonenav a,
+  .phonenav button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; min-height: 56px; padding: 6px 4px;
+    background: none; border: none; cursor: pointer;
+    color: rgba(255, 255, 255, 0.62); font-size: var(--t-2xs); font-weight: 600;
+    text-decoration: none;
+  }
+  .phonenav a.on, .phonenav button.on { color: #fff; }
+  .phonenav a.on .ico, .phonenav button.on .ico { opacity: 1; }
+
+  .phonemore-scrim {
+    display: block; position: fixed; inset: 0; z-index: 50;
+    background: rgba(15, 18, 20, 0.45);
+  }
+  .phonemore {
+    position: absolute; inset: auto 0 0 0;
+    background: var(--surface); border-radius: var(--r-lg) var(--r-lg) 0 0;
+    padding: var(--s-4) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .phonemore-who {
+    display: flex; align-items: center; gap: var(--s-3); padding-bottom: var(--s-3);
+    border-bottom: 1px solid var(--line); margin-bottom: var(--s-2);
+  }
+  .phonemore-who b { display: block; font-size: var(--t-sm); }
+  .phonemore-who small { color: var(--ink-3); font-size: var(--t-xs); }
+  .phonemore a,
+  .phonemore-out {
+    display: flex; align-items: center; gap: var(--s-3);
+    min-height: 48px; padding: 0 var(--s-2); border-radius: var(--r-md);
+    color: var(--ink); text-decoration: none; font-size: var(--t-sm); font-weight: 550;
+    background: none; border: none; cursor: pointer; text-align: left;
+  }
+  .phonemore a.on { background: var(--brand-tint); color: var(--brand-deep); }
+  .phonemore-out { color: var(--bad); margin-top: var(--s-2); }
+
+  /* Page headers: the action cluster wrapped off-screen at every width below
+     about 900px, taking the date picker and primary buttons with it. */
+  .topbar {
+    flex-wrap: wrap; height: auto; padding-top: var(--s-3); padding-bottom: var(--s-3);
+    gap: var(--s-2);
+  }
+  .topbar .right {
+    margin-left: 0; width: 100%; flex-wrap: wrap;
+  }
+  .topbar h1 { font-size: var(--t-sm); }
+
+  /* Tables are the other classic offender: they set their own width and push
+     the whole document sideways. Let them scroll inside their own card. */
+  .card { overflow-x: auto; }
+  table.tbl { min-width: 460px; }
+
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .cols, .grid2 { grid-template-columns: 1fr; }
+
+  /* Thumbs, not cursors. */
+  .btn, .runact, .chip { min-height: 40px; }
+  .modal { max-height: 92vh; }
+
+  /* Logging a dose is the thing staff do most on a phone, and a 22px box is
+     a miss waiting to happen. The box stays visually the same size; the
+     tappable area around it grows to a finger. */
+  .taskbox {
+    width: 44px; height: 44px; border: none; background: none;
+    display: grid; place-items: center;
+  }
+  .taskbox::before {
+    content: ''; width: 24px; height: 24px; border-radius: var(--r-sm);
+    border: 1.5px solid var(--line-strong); background: var(--surface);
+  }
+  .taskbox.on { background: none; }
+  .taskbox.on::before { background: var(--good); border-color: var(--good); }
+  .taskbox.on::after { left: 50%; top: 50%; margin: -7px 0 0 -3px; }
+
+  /* Segmented filters and the alert dismiss are real controls, not text. */
+  .segmented button, .segmented.small button { min-height: 40px; }
+  .calswitch a { min-height: 40px; display: flex; align-items: center; }
+  .alert-x { width: 40px; height: 40px; }
+
+  /* Inline links inside table rows stay at text size on purpose: growing
+     every pet name to 44px would triple the height of a 60-row list and cost
+     more than the occasional mis-tap. The row itself is the generous target
+     wherever a row is tappable. */
+}
+
 @media print {
   .side, .topbar, .no-print, .board-legend { display: none !important; }
   .main { overflow: visible; }

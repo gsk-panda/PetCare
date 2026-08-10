@@ -24,6 +24,8 @@ The data is seeded, not real: 56 runs, ~80 pets, ~200 bookings.
 | [11-check-in-checklist.png](11-check-in-checklist.png) | Drop-off. Allergies must be confirmed before check-in completes, and a first-time boarder is flagged for the desk. Belongings and feeding prefill from the last stay. |
 | [12-check-out-invoice.png](12-check-out-invoice.png) | Check-out priced from the stay. This one was collected after the 11:00 AM cutoff, so the pickup day appears as its own line. |
 | [15-care-rounds-mobile.png](15-care-rounds-mobile.png) | Care rounds on a phone, which is where rounds actually get done. |
+| [19-facility-board-mobile.png](19-facility-board-mobile.png) | The board on a phone: two columns of runs, full-size check-in and check-out. |
+| [20-phone-more-menu.png](20-phone-more-menu.png) | Everything that isn't the floor — one tap deeper, so the bar stays reachable. |
 
 ## Client portal
 
