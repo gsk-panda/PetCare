@@ -5,8 +5,9 @@ Various Reports - should have a report section
 Natural language search to generate reports
 Scan function with OCR to upload vaccination records - staff
 Scan function with OCR to upload vaccination records - customer - these would be unverified and would be verified by staff
-Customer portal - ability to see all previous stays
+Customer portal and staff - ability to see all previous stays and invoices
 Staff Portal - add notes to any animal during their stay. Public notes that the customers see and private notes that are staff only. Public notes with a text box to update customer via preferred communications method?
 Ability in settings to add holidays for additional rate charges during those days and increased time to cancel an appointment
+
 
 
