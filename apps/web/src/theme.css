@@ -751,6 +751,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .delta-note.down { background: var(--warn-bg); color: var(--warn); }
 .delta-note b { display: block; font-size: var(--t-sm); }
 .delta-note small { display: block; margin-top: 2px; }
+/* The waiver control sits with the note it acts on, not in the button row --
+   it changes the bill, so it belongs next to the sentence explaining why. */
+.delta-note .btn { margin-top: var(--s-2); }
 
 .runacts { margin-top: auto; display: flex; gap: 4px; flex-wrap: wrap; }
 .runact.ghost {

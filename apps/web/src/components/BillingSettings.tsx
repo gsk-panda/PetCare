@@ -118,7 +118,15 @@ export function BillingSettings({
                 disabled={!canEdit}
                 onWheel={(e) => e.currentTarget.blur()}
                 onBlur={(e) => {
-                  const bps = Math.round(Number(e.target.value) * 100);
+                  // An empty box is someone mid-edit, not a facility that
+                  // stopped charging tax: Number('') is 0, so without this a
+                  // cleared field silently writes a 0% rate on the way out.
+                  const raw = e.target.value.trim();
+                  if (!raw) {
+                    e.target.value = (data.taxRateBps / 100).toFixed(2);
+                    return;
+                  }
+                  const bps = Math.round(Number(raw) * 100);
                   if (Number.isInteger(bps) && bps !== data.taxRateBps) {
                     void run('tax', () => updateBillingSettings({ taxRateBps: bps }));
                   }

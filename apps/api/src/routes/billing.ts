@@ -205,10 +205,14 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
    */
   app.get<{
     Params: { bookingId: string };
-    Querystring: { pickedUpAt?: string };
+    Querystring: { pickedUpAt?: string; waiveLatePickup?: string };
   }>('/bookings/:bookingId/checkout-quote', async (req, reply) => {
     return withTenant(req.tenant.schemaName, async (db) => {
-      const quote = await buildQuote(db, req.params.bookingId, [], req.query.pickedUpAt);
+      const quote = await buildQuote(db, req.params.bookingId, {
+        pickedUpAt: req.query.pickedUpAt,
+        waiveLatePickup: req.query.waiveLatePickup === 'true',
+        waivedBy: staffName(req),
+      });
       if ('error' in quote) return reply.code(quote.code).send({ error: quote.error });
       return quote;
     });
@@ -223,6 +227,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       payment?: { method?: string; amountCents?: number; reference?: string };
       note?: string;
       pickedUpAt?: string;
+      waiveLatePickup?: boolean;
     };
   }>('/bookings/:bookingId/checkout', async (req, reply) => {
     const b = req.body ?? {};
@@ -236,9 +241,12 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     return withTenant(req.tenant.schemaName, async (db) => {
       await db.query('BEGIN');
       try {
-        const quote = await buildQuote(
-          db, req.params.bookingId, b.serviceItemIds ?? [], b.pickedUpAt,
-        );
+        const quote = await buildQuote(db, req.params.bookingId, {
+          serviceItemIds: b.serviceItemIds ?? [],
+          pickedUpAt: b.pickedUpAt,
+          waiveLatePickup: b.waiveLatePickup === true,
+          waivedBy: staffName(req),
+        });
         if ('error' in quote) {
           await db.query('ROLLBACK');
           return reply.code(quote.code).send({ error: quote.error });
@@ -403,11 +411,25 @@ interface QuoteLine {
  * bills the day. Rates come from the run the pet actually occupied, falling
  * back to its type when a run was never assigned.
  */
+/**
+ * Whose name goes on a waiver. Read from the session, never from the request
+ * body, so nobody can attribute a discount to a colleague.
+ */
+function staffName(req: { staff?: { name?: string } }): string | undefined {
+  return req.staff?.name;
+}
+
 async function buildQuote(
   db: { query: (sql: string, params?: unknown[]) => Promise<{ rows: any[] }> },
   bookingId: string,
-  serviceItemIds: string[] = [],
-  pickedUpAt?: string,
+  opts: {
+    serviceItemIds?: string[];
+    pickedUpAt?: string;
+    /** Cancel the after-cutoff day. The charge still appears; see below. */
+    waiveLatePickup?: boolean;
+    /** Who granted the waiver. From the session, never from the request body. */
+    waivedBy?: string;
+  } = {},
 ): Promise<
   | { error: string; code: number }
   | {
@@ -416,8 +438,10 @@ async function buildQuote(
       runLabel: string; taxRateBps: number; lines: QuoteLine[];
       subtotalCents: number; taxCents: number; totalCents: number;
       pickupCutoff: string; afterCutoff: boolean; timezone: string;
+      latePickupCents: number; latePickupWaived: boolean;
     }
 > {
+  const { serviceItemIds = [], pickedUpAt, waiveLatePickup = false, waivedBy } = opts;
   const { rows } = await db.query(
     `SELECT b.id, b.client_id, b.service_type, b.status,
             b.start_date::text AS start_date, b.end_date::text AS end_date,
@@ -465,6 +489,8 @@ async function buildQuote(
   const rate = Number(b.rate_cents) || 0;
   const lines: QuoteLine[] = [];
   const runLabel = b.run_label ?? b.run_code ?? 'Unassigned';
+  let latePickupCents = 0;
+  let latePickupWaived = false;
 
   if (b.service_type === 'boarding') {
     const nights = Math.max(1, Number(b.nights));
@@ -490,6 +516,7 @@ async function buildQuote(
     );
     const extraDays = daysBeyond + (fs[0].after_cutoff ? 1 : 0);
     if (extraDays > 0) {
+      latePickupCents = extraDays * rate;
       lines.push({
         kind: 'boarding',
         description:
@@ -498,9 +525,26 @@ async function buildQuote(
             : `Pickup after ${fs[0].cutoff_label} · pickup day charged`,
         quantity: extraDays,
         unitCents: rate,
-        amountCents: extraDays * rate,
+        amountCents: latePickupCents,
         taxable: true,
       });
+
+      // A waiver cancels the charge with a second line rather than deleting the
+      // first. Months later, "why was this stay cheaper?" is a question someone
+      // will ask, and a bill that quietly disagrees with the stated policy
+      // cannot answer it. Taxable, mirroring the charge, so the tax comes off
+      // with it instead of being levied on money nobody paid.
+      if (waiveLatePickup) {
+        latePickupWaived = true;
+        lines.push({
+          kind: 'adjustment',
+          description: `Late pickup waived${waivedBy ? ` · ${waivedBy}` : ''}`,
+          quantity: 1,
+          unitCents: -latePickupCents,
+          amountCents: -latePickupCents,
+          taxable: true,
+        });
+      }
     }
   } else {
     lines.push({
@@ -571,5 +615,7 @@ async function buildQuote(
     pickupCutoff: fs[0].cutoff_label,
     afterCutoff: Boolean(fs[0].after_cutoff),
     timezone: fs[0].timezone,
+    latePickupCents,
+    latePickupWaived,
   };
 }

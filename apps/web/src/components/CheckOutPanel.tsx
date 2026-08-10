@@ -45,6 +45,8 @@ export function CheckOutPanel({
   const [method, setMethod] = useState('card_terminal');
   const [reference, setReference] = useState('');
   const [takePayment, setTakePayment] = useState(true);
+  const [waiveLate, setWaiveLate] = useState(false);
+  const [reloading, setReloading] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchCheckoutQuote(bookingId), fetchBillingSettings()])
@@ -54,6 +56,19 @@ export function CheckOutPanel({
       })
       .catch((e: Error) => setError(e.message));
   }, [bookingId]);
+
+  // Reprice on the server rather than subtracting locally: the waiver also
+  // removes the tax on the waived day, and the total the desk reads must be
+  // the total that gets invoiced.
+  useEffect(() => {
+    if (!quote) return;
+    if (waiveLate === quote.latePickupWaived) return;
+    setReloading(true);
+    fetchCheckoutQuote(bookingId, waiveLate)
+      .then(setQuote)
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setReloading(false));
+  }, [waiveLate, bookingId, quote]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -85,6 +100,7 @@ export function CheckOutPanel({
     try {
       const result = await completeCheckout(bookingId, {
         serviceItemIds: extras,
+        waiveLatePickup: waiveLate,
         payment: takePayment ? { method, amountCents: total, reference: reference.trim() } : undefined,
       });
       setDone({ totalCents: result.totalCents, paidCents: result.paidCents });
@@ -180,13 +196,26 @@ export function CheckOutPanel({
                 </tbody>
               </table>
 
-              {quote.afterCutoff && (
-                <div className="delta-note down">
-                  <b>Collected after {quote.pickupCutoff}</b>
+              {quote.latePickupCents > 0 && (
+                <div className={waiveLate ? 'delta-note' : 'delta-note down'}>
+                  <b>
+                    {waiveLate
+                      ? `${money(quote.latePickupCents)} late pickup waived`
+                      : `Collected after ${quote.pickupCutoff}`}
+                  </b>
                   <small>
-                    The run cannot be re-let today, so the pickup day is charged. It is on the
-                    bill as its own line.
+                    {waiveLate
+                      ? 'The charge stays on the bill with a matching credit, so the waiver is visible later and carries your name.'
+                      : 'The run cannot be re-let today, so the pickup day is charged. It is on the bill as its own line.'}
                   </small>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    disabled={reloading}
+                    onClick={() => setWaiveLate((w) => !w)}
+                  >
+                    {reloading ? 'Repricing…' : waiveLate ? 'Charge it' : 'Waive it'}
+                  </button>
                 </div>
               )}
 

@@ -367,10 +367,16 @@ export interface CheckoutQuote {
   pickupCutoff: string;
   afterCutoff: boolean;
   timezone: string;
+  /** What the after-cutoff day costs, before any waiver. Zero when none applies. */
+  latePickupCents: number;
+  latePickupWaived: boolean;
 }
 
-export const fetchCheckoutQuote = (bookingId: string) =>
-  get<CheckoutQuote>(`/api/${TENANT_SLUG}/bookings/${bookingId}/checkout-quote`);
+export const fetchCheckoutQuote = (bookingId: string, waiveLatePickup = false) =>
+  get<CheckoutQuote>(
+    `/api/${TENANT_SLUG}/bookings/${bookingId}/checkout-quote` +
+      (waiveLatePickup ? '?waiveLatePickup=true' : ''),
+  );
 
 export const completeCheckout = (
   bookingId: string,
@@ -380,6 +386,7 @@ export const completeCheckout = (
     adjustmentNote?: string;
     payment?: { method: string; amountCents: number; reference?: string };
     note?: string;
+    waiveLatePickup?: boolean;
   },
 ) =>
   send<{
