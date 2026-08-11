@@ -1372,3 +1372,24 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
   /* Touch cannot drag, so the picker is the only route — give it room. */
   .gmove { max-width: 110px; min-height: 32px; }
 }
+
+/* ---- moving dogs between groups on the daycare calendar ---- */
+/* The chip used to be the link itself; it now wraps a link plus a picker. */
+.dc-dogname {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: inherit; text-decoration: none;
+}
+.dc-dog[draggable='true'] { cursor: grab; }
+.dc-dog.lifting { opacity: 0.45; }
+.dc-dog.pending { background: var(--surface); border-style: dashed; }
+.dc-cell.dropping {
+  background: var(--brand-tint); box-shadow: inset 0 0 0 2px var(--brand);
+}
+/* The picker inside a calendar chip has to stay chip-sized. */
+.dc-dog .gmove {
+  font-size: var(--t-3xs); max-width: 62px; color: var(--ink-3);
+}
+.dc-unassigned .dc-dogs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+@media (hover: none) and (pointer: coarse) {
+  .dc-dog .gmove { max-width: 96px; min-height: 30px; }
+}

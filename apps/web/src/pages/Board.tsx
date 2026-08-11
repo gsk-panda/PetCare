@@ -6,13 +6,7 @@ import { CheckOutPanel } from '../components/CheckOutPanel';
 import { StayDatesPanel } from '../components/StayDatesPanel';
 import { Icon } from '../components/Icon';
 import { facilityToday, shiftDate } from '../facility-time';
-
-/**
- * Custom MIME type for a dragged daycare booking. A named type lets a drop
- * target decide whether it wants the payload from dataTransfer.types alone,
- * which is the only thing available during dragover.
- */
-const DRAG_TYPE = 'application/x-petcare-booking';
+import { GROUP_DRAG_TYPE, readGroupDrag, writeGroupDrag } from '../components/group-dnd';
 
 /**
  * The one action this occupant can take right now, if any. Only offered on
@@ -62,7 +56,8 @@ export function Board() {
   const [dragging, setDragging] = useState<{
     bookingId: string;
     petName: string;
-    fromRunId: string;
+    fromRunId: string | null;
+    date: string;
   } | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [moved, setMoved] = useState<string | null>(null);
@@ -221,7 +216,7 @@ export function Board() {
                         // state: state set in onDragStart has not flushed by
                         // the first dragover, and gating preventDefault on it
                         // means the browser refuses the drop entirely.
-                        if (full || !e.dataTransfer.types.includes(DRAG_TYPE)) return;
+                        if (full || !e.dataTransfer.types.includes(GROUP_DRAG_TYPE)) return;
                         e.preventDefault();
                         setDragOver(cell.run.id);
                       }}
@@ -229,14 +224,9 @@ export function Board() {
                       onDrop={(e) => {
                         e.preventDefault();
                         setDragOver(null);
-                        const raw = e.dataTransfer.getData(DRAG_TYPE);
-                        if (!raw) return;
-                        const payload = JSON.parse(raw) as {
-                          bookingId: string;
-                          petName: string;
-                          fromRunId: string;
-                        };
-                        if (payload.fromRunId === cell.run.id) return;
+                        const payload = readGroupDrag(e.dataTransfer);
+                        if (!payload || payload.fromRunId === cell.run.id) return;
+                        if (payload.date !== date) return;
                         void moveDog(payload.bookingId, cell.run.id, payload.petName, cell.run.label);
                       }}
                     >
@@ -263,9 +253,9 @@ export function Board() {
                                     bookingId: g.bookingId,
                                     petName: g.petName,
                                     fromRunId: cell.run.id,
+                                    date,
                                   };
-                                  e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(payload));
-                                  e.dataTransfer.effectAllowed = 'move';
+                                  writeGroupDrag(e.dataTransfer, payload);
                                   setDragging(payload);
                                 }}
                                 onDragEnd={() => {
@@ -284,7 +274,7 @@ export function Board() {
                                 {movable && groups.length > 1 && (
                                   <select
                                     className="gmove"
-                                    value={cell.run.id}
+                                    value=""
                                     disabled={busy === g.bookingId}
                                     aria-label={`Move ${g.petName} to another group`}
                                     onChange={(e) =>
@@ -296,22 +286,22 @@ export function Board() {
                                       )
                                     }
                                   >
-                                    {groups.map((other) => (
-                                      <option
-                                        key={other.run.id}
-                                        value={other.run.id}
-                                        disabled={
-                                          other.run.id !== cell.run.id &&
-                                          other.occupants.length >= other.run.capacity
-                                        }
-                                      >
-                                        {other.run.label}
-                                        {other.run.id !== cell.run.id &&
-                                        other.occupants.length >= other.run.capacity
-                                          ? ' (full)'
-                                          : ''}
-                                      </option>
-                                    ))}
+                                    {/* The dog's current group is the cell it is
+                                        sitting in, so listing it again is noise.
+                                        Only somewhere else to go is useful. */}
+                                    <option value="">Move…</option>
+                                    {groups
+                                      .filter((other) => other.run.id !== cell.run.id)
+                                      .map((other) => (
+                                        <option
+                                          key={other.run.id}
+                                          value={other.run.id}
+                                          disabled={other.occupants.length >= other.run.capacity}
+                                        >
+                                          {other.run.label}
+                                          {other.occupants.length >= other.run.capacity ? ' (full)' : ''}
+                                        </option>
+                                      ))}
                                   </select>
                                 )}
                                 {gAction && (
