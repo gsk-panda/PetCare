@@ -1276,6 +1276,41 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .muted { color: var(--ink-3); }
 
 /* =========================================================================
+   Change requests — the facility's own notepad
+   ========================================================================= */
+.cr-add {
+  display: flex; flex-direction: column; gap: var(--s-2); margin-bottom: var(--s-3);
+}
+.cr-add-row { display: flex; gap: var(--s-2); align-items: center; }
+/* .segmented buttons carry no horizontal padding — they rely on flex:1 filling
+   a full-width bar. Here the bar is only as wide as its content, so the labels
+   need their own padding. Three classes deep because `.segmented.small button`
+   sets the padding shorthand, which would otherwise zero this out. */
+.cr-kind { flex: 0 0 auto; }
+.segmented.small.cr-kind button { padding: 8px var(--s-4); }
+.cr-add-row .btn { margin-left: auto; }
+
+.cr-list { display: flex; flex-direction: column; gap: 2px; }
+.cr-list li {
+  display: grid; grid-template-columns: auto 1fr auto; gap: var(--s-3);
+  align-items: start; padding: var(--s-3) 0;
+  border-top: 1px solid var(--line);
+}
+.cr-list li.done { opacity: 0.55; }
+.cr-list li.done .cr-body p { text-decoration: line-through; }
+.cr-body p { font-size: var(--t-sm); line-height: 1.5; white-space: pre-wrap; }
+.cr-body small { display: block; margin-top: 3px; color: var(--ink-3); font-size: var(--t-xs); }
+.cr-actions { display: flex; gap: 2px; flex-shrink: 0; }
+.cr-edit { display: flex; flex-direction: column; gap: var(--s-2); }
+.cr-edit-actions { display: flex; gap: var(--s-2); justify-content: flex-end; }
+
+@media (max-width: 768px) {
+  /* Three columns of controls next to a paragraph does not fit a phone. */
+  .cr-list li { grid-template-columns: auto 1fr; }
+  .cr-actions { grid-column: 1 / -1; justify-content: flex-end; }
+}
+
+/* =========================================================================
    Touch input sizing â€” last, on purpose
 
    iOS Safari zooms the page whenever a focused control renders text under

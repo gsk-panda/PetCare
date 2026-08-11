@@ -8,6 +8,7 @@ import {
 import { Icon } from '../components/Icon';
 import { KennelRuns } from '../components/KennelRuns';
 import { BillingSettings } from '../components/BillingSettings';
+import { ChangeRequests } from '../components/ChangeRequests';
 import { canManageSettings, useStaff } from '../staff-context';
 
 export function Settings() {
@@ -261,6 +262,10 @@ export function Settings() {
             </table>
           </div>
         )}
+
+        {/* Last: everything above configures the software, this one is about
+            changing it. */}
+        <ChangeRequests onError={setError} canEdit={canEdit} />
       </div>
     </>
   );

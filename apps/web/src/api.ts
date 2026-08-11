@@ -836,3 +836,32 @@ export const runVaccineSweep = (withinDays = 30) =>
     'POST',
     { withinDays },
   );
+
+/* ============================ change requests ============================ */
+
+export type ChangeRequestKind = 'add' | 'change' | 'remove';
+
+export interface ChangeRequest {
+  id: string;
+  kind: ChangeRequestKind;
+  body: string;
+  done: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdByName: string | null;
+  updatedByName: string | null;
+}
+
+export const fetchChangeRequests = () =>
+  get<{ requests: ChangeRequest[] }>(`/api/${TENANT_SLUG}/settings/change-requests`);
+
+export const createChangeRequest = (body: { kind: ChangeRequestKind; body: string }) =>
+  send<{ id: string }>('/settings/change-requests', 'POST', body);
+
+export const updateChangeRequest = (
+  id: string,
+  body: { kind?: ChangeRequestKind; body?: string; done?: boolean },
+) => send<{ ok: boolean }>(`/settings/change-requests/${id}`, 'PATCH', body);
+
+export const deleteChangeRequest = (id: string) =>
+  send<{ ok: boolean }>(`/settings/change-requests/${id}`, 'DELETE', undefined);
