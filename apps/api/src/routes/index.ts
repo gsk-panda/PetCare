@@ -8,6 +8,7 @@ import { calendarRoutes } from './calendar.js';
 import { runRoutes } from './runs.js';
 import { careRoutes } from './care.js';
 import { alertRoutes } from './alerts.js';
+import { reportRoutes } from './reports.js';
 import { settingsRoutes } from './settings.js';
 import { runSettingsRoutes } from './run-settings.js';
 import { billingRoutes } from './billing.js';
@@ -72,6 +73,7 @@ async function protectedStaffRoutes(app: FastifyInstance): Promise<void> {
   await app.register(runRoutes);
   await app.register(careRoutes);
   await app.register(alertRoutes);
+  await app.register(reportRoutes);
   await app.register(settingsRoutes);
   await app.register(runSettingsRoutes);
   await app.register(billingRoutes);

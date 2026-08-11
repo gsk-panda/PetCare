@@ -702,3 +702,74 @@ export async function checkOut(bookingId: string): Promise<void> {
   });
   if (!res.ok) throw new Error(`Check-out failed: ${res.status}`);
 }
+
+/* ============================ reports ============================ */
+
+export interface OccupancyReport {
+  from: string;
+  to: string;
+  days: Array<{
+    date: string;
+    boarding: number;
+    daycare: number;
+    boardingCapacity: number;
+    daycareCapacity: number;
+    /** Basis points, so 5490 is 54.90%. */
+    utilisationBps: number;
+  }>;
+  totals: {
+    boardingNights: number;
+    daycareDays: number;
+    capacityNights: number;
+    utilisationBps: number;
+    busiestDate: string | null;
+  };
+}
+
+export interface RevenueReport {
+  from: string;
+  to: string;
+  totals: {
+    invoices: number;
+    subtotalCents: number;
+    taxCents: number;
+    totalCents: number;
+    paidCents: number;
+    outstandingCents: number;
+  };
+  byDay: Array<{ date: string; invoices: number; totalCents: number }>;
+  byKind: Array<{ kind: string; amountCents: number; lines: number }>;
+  byMethod: Array<{ method: string; amountCents: number; payments: number }>;
+}
+
+export interface VaccinationReport {
+  withinDays: number;
+  rows: Array<{
+    petId: string;
+    petName: string;
+    avatarColor: string;
+    clientName: string;
+    clientPhone: string | null;
+    clientEmail: string | null;
+    vaccine: string;
+    expiresOn: string;
+    daysLeft: number;
+    verified: boolean;
+    hasUpcoming: boolean;
+  }>;
+  totals: {
+    expired: number;
+    expiringSoon: number;
+    blockingUpcoming: number;
+    unverified: number;
+  };
+}
+
+export const fetchOccupancyReport = (from: string, to: string) =>
+  get<OccupancyReport>(`/api/${TENANT_SLUG}/reports/occupancy?from=${from}&to=${to}`);
+
+export const fetchRevenueReport = (from: string, to: string) =>
+  get<RevenueReport>(`/api/${TENANT_SLUG}/reports/revenue?from=${from}&to=${to}`);
+
+export const fetchVaccinationReport = (withinDays: number) =>
+  get<VaccinationReport>(`/api/${TENANT_SLUG}/reports/vaccinations?withinDays=${withinDays}`);

@@ -14,6 +14,10 @@ import { Settings } from './pages/Settings';
 import { PetProfile } from './pages/PetProfile';
 import { CareRounds } from './pages/CareRounds';
 import { CareLogReport } from './pages/CareLogReport';
+import { Reports } from './pages/Reports';
+import { OccupancyReport } from './pages/OccupancyReport';
+import { RevenueReport } from './pages/RevenueReport';
+import { VaccinationReport } from './pages/VaccinationReport';
 import { PortalApp } from './portal/PortalApp';
 
 export default function App() {
@@ -86,7 +90,11 @@ function StaffApp({ tenant }: { tenant: TenantMeta }) {
         <Route path="/settings" element={<Settings />} />
         <Route path="/clients" element={<Clients />} />
         <Route path="/care" element={<CareRounds />} />
+        <Route path="/reports" element={<Reports />} />
         <Route path="/reports/care-log" element={<CareLogReport />} />
+        <Route path="/reports/occupancy" element={<OccupancyReport />} />
+        <Route path="/reports/revenue" element={<RevenueReport />} />
+        <Route path="/reports/vaccinations" element={<VaccinationReport />} />
         <Route path="/pets/:petId" element={<PetProfile />} />
       </Routes>
     </Shell>

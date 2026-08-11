@@ -1234,6 +1234,48 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 }
 
 /* =========================================================================
+   Reports
+   ========================================================================= */
+.report-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--s-3);
+}
+.report-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: var(--s-4); text-decoration: none; color: inherit;
+  display: flex; flex-direction: column; gap: 6px;
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.report-card:hover { border-color: var(--brand); box-shadow: var(--lift); }
+.report-icon {
+  width: 34px; height: 34px; border-radius: var(--r-md); display: grid; place-items: center;
+  background: var(--brand-tint); color: var(--brand-deep); margin-bottom: 2px;
+}
+.report-card b { font-size: var(--t-base); font-weight: 650; }
+.report-card p { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.45; }
+.report-card small { font-size: var(--t-xs); color: var(--ink-3); font-style: italic; }
+
+.crumb {
+  display: inline-flex; align-items: center; gap: 3px;
+  color: var(--ink-3); text-decoration: none; font-size: var(--t-xs); font-weight: 600;
+  margin-right: var(--s-2);
+}
+.crumb:hover { color: var(--brand); }
+.range-sep { color: var(--ink-3); font-size: var(--t-xs); }
+
+/* A bar behind the number: a month of occupancy is read as a shape first. */
+.occbar { display: flex; align-items: center; gap: var(--s-2); }
+.occbar i {
+  height: 8px; border-radius: var(--r-pill); background: var(--brand);
+  min-width: 2px; flex-shrink: 0;
+}
+.occbar em { font-style: normal; font-size: var(--t-xs); color: var(--ink-3); }
+
+.petlink { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--brand-deep); font-weight: 600; }
+.petlink i { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.muted { color: var(--ink-3); }
+
+/* =========================================================================
    Touch input sizing — last, on purpose
 
    iOS Safari zooms the page whenever a focused control renders text under

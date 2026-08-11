@@ -94,3 +94,8 @@ These are known and tracked, and each one is load-bearing:
   exists for this; the queries have not moved onto it yet.
 - **Root AWS credentials.** Deployment should use a scoped IAM role, and the
   root access keys should be deleted.
+- **iOS Safari is improved but not signed off.** Check-in on an iPhone has had
+  the dvh sizing, 16px inputs, safe-area and overscroll fixes, but all of it
+  was verified in desktop WebKit, which cannot reproduce Safari's moving
+  toolbar. Needs a pass on a real device, and the rest of the staff app has
+  only been checked in Chrome's emulator.
