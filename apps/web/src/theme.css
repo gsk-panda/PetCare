@@ -958,7 +958,14 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
  */
 .modal {
   background: var(--surface); border-radius: var(--r-lg); width: min(520px, 100%);
-  max-height: 90vh; overflow: hidden; box-shadow: var(--lift);
+  /* dvh, not vh. On iOS Safari `vh` is the viewport with the browser chrome
+     retracted, so 90vh is taller than what you can actually see and the
+     footer ends up underneath the address bar or the bottom toolbar. dvh
+     tracks the chrome as it comes and goes; the vh line is the fallback for
+     browsers that do not know dvh. */
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow: hidden; box-shadow: var(--lift);
   display: flex; flex-direction: column;
   animation: modal-in var(--dur) var(--ease);
 }
@@ -988,9 +995,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .modal-body {
   padding: var(--s-4); display: flex; flex-direction: column; gap: var(--s-3);
   overflow-y: auto; flex: 1 1 auto; min-height: 0;
+  /* Stop the scroll chaining to the page behind once the body hits its end. */
+  overscroll-behavior: contain;
 }
 .modal-ft {
-  display: flex; justify-content: flex-end; gap: var(--s-2); padding: var(--s-3) var(--s-4);
+  display: flex; justify-content: flex-end; gap: var(--s-2);
+  padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line); background: var(--surface-2);
   flex-shrink: 0;
 }
@@ -1181,7 +1191,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 
   /* Thumbs, not cursors. */
   .btn, .runact, .chip { min-height: 40px; }
-  .modal { max-height: 92vh; }
+  .modal { max-height: 92vh; max-height: 92dvh; }
+  /* The scrim's desktop padding costs a phone most of a form field. */
+  .modal-scrim { padding: var(--s-2); }
 
   /* Logging a dose is the thing staff do most on a phone, and a 22px box is
      a miss waiting to happen. The box stays visually the same size; the
@@ -1219,4 +1231,30 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
   .card { border: 1px solid #ccc; break-inside: auto; }
   .tbl tr { break-inside: avoid; }
   body { background: #fff; }
+}
+
+/* =========================================================================
+   Touch input sizing — last, on purpose
+
+   iOS Safari zooms the page whenever a focused control renders text under
+   16px, and this app's dense default is 13px. Mid-check-in that meant tapping
+   "Food" silently zoomed the layout and carried the panel's buttons off
+   screen. Nothing in the CSS looks wrong afterwards, which is what made it
+   hard to see from a desktop browser.
+
+   It lives at the end of the file and repeats the component selectors because
+   the 13px comes from `.field input` and friends — an element-level override
+   loses that cascade no matter where it sits.
+
+   Keyed to a coarse pointer rather than a width: an iPad in landscape is a
+   desktop-width device that still zooms.
+   ========================================================================= */
+@media (hover: none) and (pointer: coarse) {
+  input, select, textarea,
+  .field input, .field select, .field textarea,
+  .inline-field input, .inline-field select,
+  .check-input, .cell-input, .date-input,
+  .runtype-hd .cell-input {
+    font-size: 16px;
+  }
 }
