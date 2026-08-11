@@ -865,3 +865,11 @@ export const updateChangeRequest = (
 
 export const deleteChangeRequest = (id: string) =>
   send<{ ok: boolean }>(`/settings/change-requests/${id}`, 'DELETE', undefined);
+
+/** Move a daycare booking into another play group. */
+export const moveToPlayGroup = (bookingId: string, runId: string) =>
+  send<{ ok: boolean; from?: string; to?: string }>(
+    `/bookings/${bookingId}/group`,
+    'PATCH',
+    { runId },
+  );

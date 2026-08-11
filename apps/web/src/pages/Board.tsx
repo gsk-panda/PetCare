@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchBoard, type BoardCell, type BoardOccupant } from '../api';
+import { fetchBoard, moveToPlayGroup, type BoardCell, type BoardOccupant } from '../api';
 import { CheckInPanel } from '../components/CheckInPanel';
 import { CheckOutPanel } from '../components/CheckOutPanel';
 import { StayDatesPanel } from '../components/StayDatesPanel';
 import { Icon } from '../components/Icon';
 import { facilityToday, shiftDate } from '../facility-time';
+
+/**
+ * Custom MIME type for a dragged daycare booking. A named type lets a drop
+ * target decide whether it wants the payload from dataTransfer.types alone,
+ * which is the only thing available during dragover.
+ */
+const DRAG_TYPE = 'application/x-petcare-booking';
 
 /**
  * The one action this occupant can take right now, if any. Only offered on
@@ -52,6 +59,13 @@ export function Board() {
     runCode: string;
   } | null>(null);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
+  const [dragging, setDragging] = useState<{
+    bookingId: string;
+    petName: string;
+    fromRunId: string;
+  } | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+  const [moved, setMoved] = useState<string | null>(null);
   const [editingDates, setEditingDates] = useState<{
     occupant: BoardOccupant;
     runLabel: string;
@@ -64,6 +78,26 @@ export function Board() {
       .catch((e: Error) => setError(e.message));
   }, [date]);
   useEffect(load, [load]);
+
+  // Every play group on the board, so a chip can offer the others.
+  const groups = useMemo(() => cells.filter((c) => c.run.kind === 'playgroup'), [cells]);
+
+  const moveDog = async (bookingId: string, runId: string, petName: string, toLabel: string) => {
+    setBusy(bookingId);
+    setError(null);
+    setMoved(null);
+    try {
+      await moveToPlayGroup(bookingId, runId);
+      setMoved(`${petName} moved to ${toLabel}`);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+      setDragging(null);
+      setDragOver(null);
+    }
+  };
 
   const zones = useMemo(() => {
     const m = new Map<string, BoardCell[]>();
@@ -159,6 +193,7 @@ export function Board() {
         />
       )}
       <div className="content">
+        {moved && <div className="delta-note">{moved}</div>}
         <div className="board-legend">
           <span><i style={{ background: 'var(--surface)', boxShadow: 'inset 0 0 0 1px var(--line-strong)' }} />Occupied</span>
           <span><i style={{ background: 'var(--info-bg)', boxShadow: 'inset 0 0 0 1px var(--info)' }} />Arriving</span>
@@ -176,8 +211,35 @@ export function Board() {
                 // Play groups hold many dogs, so they get a full-width cell
                 // listing every occupant rather than a truncated summary.
                 if (isGroup) {
+                  const full = cell.occupants.length >= cell.run.capacity;
                   return (
-                    <div key={cell.run.id} className="run group">
+                    <div
+                      key={cell.run.id}
+                      className={`run group${dragOver === cell.run.id ? ' dropping' : ''}`}
+                      onDragOver={(e) => {
+                        // Read the drag payload from the event, not from React
+                        // state: state set in onDragStart has not flushed by
+                        // the first dragover, and gating preventDefault on it
+                        // means the browser refuses the drop entirely.
+                        if (full || !e.dataTransfer.types.includes(DRAG_TYPE)) return;
+                        e.preventDefault();
+                        setDragOver(cell.run.id);
+                      }}
+                      onDragLeave={() => setDragOver((v) => (v === cell.run.id ? null : v))}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragOver(null);
+                        const raw = e.dataTransfer.getData(DRAG_TYPE);
+                        if (!raw) return;
+                        const payload = JSON.parse(raw) as {
+                          bookingId: string;
+                          petName: string;
+                          fromRunId: string;
+                        };
+                        if (payload.fromRunId === cell.run.id) return;
+                        void moveDog(payload.bookingId, cell.run.id, payload.petName, cell.run.label);
+                      }}
+                    >
                       <div className="group-hd">
                         <span className="id">{cell.run.label}</span>
                         <b>
@@ -185,18 +247,73 @@ export function Board() {
                         </b>
                       </div>
                       {cell.occupants.length === 0 ? (
-                        <small>No dogs in this group today</small>
+                        <small>{dragging ? 'Drop a dog here' : 'No dogs in this group today'}</small>
                       ) : (
                         <div className="grouplist">
                           {cell.occupants.map((g) => {
                             const gAction = actionFor(g, date);
+                            const movable = g.status !== 'checked_out' && g.status !== 'canceled';
                             return (
-                              <span key={g.bookingId} className="gchip">
+                              <span
+                                key={g.bookingId}
+                                className={`gchip${dragging?.bookingId === g.bookingId ? ' lifting' : ''}`}
+                                draggable={movable}
+                                onDragStart={(e) => {
+                                  const payload = {
+                                    bookingId: g.bookingId,
+                                    petName: g.petName,
+                                    fromRunId: cell.run.id,
+                                  };
+                                  e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(payload));
+                                  e.dataTransfer.effectAllowed = 'move';
+                                  setDragging(payload);
+                                }}
+                                onDragEnd={() => {
+                                  setDragging(null);
+                                  setDragOver(null);
+                                }}
+                              >
                                 <Link to={`/pets/${g.petId}`} className="gname">
                                   <i style={{ background: g.avatarColor }} />
                                   {g.petName}
                                 </Link>
                                 {g.hasMeds && <em className="gmed">Med</em>}
+                                {/* Dragging is not available on a phone, and the
+                                    board is used on one. The picker is the way
+                                    that always works; the drag is the shortcut. */}
+                                {movable && groups.length > 1 && (
+                                  <select
+                                    className="gmove"
+                                    value={cell.run.id}
+                                    disabled={busy === g.bookingId}
+                                    aria-label={`Move ${g.petName} to another group`}
+                                    onChange={(e) =>
+                                      void moveDog(
+                                        g.bookingId,
+                                        e.target.value,
+                                        g.petName,
+                                        groups.find((x) => x.run.id === e.target.value)?.run.label ?? '',
+                                      )
+                                    }
+                                  >
+                                    {groups.map((other) => (
+                                      <option
+                                        key={other.run.id}
+                                        value={other.run.id}
+                                        disabled={
+                                          other.run.id !== cell.run.id &&
+                                          other.occupants.length >= other.run.capacity
+                                        }
+                                      >
+                                        {other.run.label}
+                                        {other.run.id !== cell.run.id &&
+                                        other.occupants.length >= other.run.capacity
+                                          ? ' (full)'
+                                          : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
                                 {gAction && (
                                   <button
                                     className="gact"

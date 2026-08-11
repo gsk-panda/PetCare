@@ -1,4 +1,5 @@
 import type pg from 'pg';
+import { groupHasRoom, suggestedPlayGroup } from './play-groups.js';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -69,21 +70,15 @@ export async function createDaycareDays(
         continue;
       }
 
-      if (opts.runId) {
-        const { rows: full } = await db.query(
-          `SELECT r.code, r.capacity, COUNT(b.id)::int AS booked
-           FROM runs r
-           LEFT JOIN bookings b
-             ON b.run_id = r.id AND b.service_type = 'daycare'
-            AND b.status IN ('requested', 'confirmed', 'checked_in')
-            AND b.start_date = $2::date
-           WHERE r.id = $1
-           GROUP BY r.code, r.capacity
-           HAVING COUNT(b.id) >= r.capacity`,
-          [opts.runId, date],
-        );
-        if (full[0]) {
-          skipped.push({ date, reason: `${full[0].code} full (${full[0].booked}/${full[0].capacity})` });
+      // No group named? Put the dog back where it was last time, if there is
+      // room. Staff move dogs between groups on the floor, and that decision
+      // should not have to be made again every visit.
+      const runId = opts.runId ?? (await suggestedPlayGroup(db, opts.petId, date));
+
+      if (runId) {
+        const room = await groupHasRoom(db, runId, date);
+        if (!room.ok) {
+          skipped.push({ date, reason: room.reason });
           continue;
         }
       }
@@ -98,7 +93,7 @@ export async function createDaycareDays(
           clientId,
           opts.status,
           date,
-          opts.runId ?? null,
+          runId ?? null,
           opts.notes?.trim() || null,
           opts.source,
         ],

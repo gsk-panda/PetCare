@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { facilityToday, withTenant } from '../db.js';
 import { createDaycareDays } from '../daycare-booking.js';
 import { queueBookingConfirmation } from '../booking-email.js';
+import { groupHasRoom, suggestedPlayGroup } from '../play-groups.js';
 
 export async function bookingRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Querystring: { from?: string; to?: string } }>('/bookings', async (req) => {
@@ -89,6 +90,71 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
           endDate: c.end_date,
         })),
       };
+    });
+  });
+
+  /**
+   * Move a daycare booking to another play group.
+   *
+   * Groups get rearranged on the floor all day — a dog is too boisterous for
+   * the small group, two of them will not settle together — so this is a
+   * first-class action rather than an edit buried in a form. The change is
+   * recorded on the stay, because "who moved my dog and why" is a question
+   * owners ask.
+   */
+  app.patch<{
+    Params: { bookingId: string };
+    Body: { runId?: string };
+  }>('/bookings/:bookingId/group', async (req, reply) => {
+    const runId = req.body?.runId;
+    if (!runId) return reply.code(400).send({ error: 'Choose a play group' });
+
+    return withTenant(req.tenant.schemaName, async (db) => {
+      const { rows: current } = await db.query(
+        `SELECT b.id, b.pet_id, b.service_type, b.status, b.start_date::text AS start_date,
+                b.run_id, p.name AS pet_name, r.label AS from_label, r.code AS from_code
+           FROM bookings b
+           JOIN pets p ON p.id = b.pet_id
+           LEFT JOIN runs r ON r.id = b.run_id
+          WHERE b.id = $1`,
+        [req.params.bookingId],
+      );
+      const booking = current[0];
+      if (!booking) return reply.code(404).send({ error: 'Booking not found' });
+      if (booking.service_type !== 'daycare') {
+        return reply.code(400).send({ error: 'Only daycare bookings sit in a play group' });
+      }
+      if (booking.status === 'canceled' || booking.status === 'checked_out') {
+        return reply.code(409).send({ error: 'This day is already closed' });
+      }
+      if (booking.run_id === runId) return { ok: true, unchanged: true };
+
+      const { rows: target } = await db.query(
+        `SELECT id, code, label, kind, active FROM runs WHERE id = $1`,
+        [runId],
+      );
+      const to = target[0];
+      if (!to || to.kind !== 'playgroup') {
+        return reply.code(400).send({ error: 'That is not a play group' });
+      }
+      if (!to.active) return reply.code(400).send({ error: 'That play group has been retired' });
+
+      const room = await groupHasRoom(db, runId, booking.start_date, booking.id);
+      if (!room.ok) return reply.code(409).send({ error: room.reason });
+
+      await db.query('UPDATE bookings SET run_id = $2 WHERE id = $1', [booking.id, runId]);
+
+      const fromName = booking.from_label ?? booking.from_code ?? 'no group';
+      await db.query(
+        `INSERT INTO care_events (booking_id, pet_id, type, staff_name, staff_id, note)
+         VALUES ($1, $2, 'note', $3, $4, $5)`,
+        [
+          booking.id, booking.pet_id, req.staff.name, req.staff.id,
+          `Moved from ${fromName} to ${to.label ?? to.code}.`,
+        ],
+      );
+
+      return { ok: true, from: fromName, to: to.label ?? to.code };
     });
   });
 
@@ -256,31 +322,23 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
         }
       }
 
+      // Same rule as the multi-day path: no group named means the one the dog
+      // was in last time.
+      const effectiveRun =
+        serviceType === 'daycare' && !runId
+          ? await suggestedPlayGroup(db, petId, startDate)
+          : runId;
+
       // Daycare play groups are capacity-based rather than exclusive.
-      if (runId && serviceType === 'daycare') {
-        const { rows: full } = await db.query(
-          `SELECT r.code, r.capacity, COUNT(b.id)::int AS booked
-           FROM runs r
-           LEFT JOIN bookings b
-             ON b.run_id = r.id AND b.service_type = 'daycare'
-            AND b.status IN ('requested', 'confirmed', 'checked_in')
-            AND b.start_date = $2::date
-           WHERE r.id = $1
-           GROUP BY r.code, r.capacity
-           HAVING COUNT(b.id) >= r.capacity`,
-          [runId, startDate],
-        );
-        if (full[0]) {
-          return reply.code(409).send({
-            error: `Play group ${full[0].code} is full that day (${full[0].booked}/${full[0].capacity})`,
-          });
-        }
+      if (effectiveRun && serviceType === 'daycare') {
+        const room = await groupHasRoom(db, effectiveRun, startDate);
+        if (!room.ok) return reply.code(409).send({ error: room.reason });
       }
 
       const { rows } = await db.query(
         `INSERT INTO bookings (pet_id, client_id, service_type, status, start_date, end_date, run_id, notes)
          VALUES ($1, $2, $3, 'confirmed', $4, $5, $6, $7) RETURNING id`,
-        [petId, petRows[0].client_id, serviceType, startDate, endDate, runId ?? null, notes ?? null],
+        [petId, petRows[0].client_id, serviceType, startDate, endDate, effectiveRun ?? null, notes ?? null],
       );
       await queueBookingConfirmation(db, rows[0].id, (m, meta) => req.log.warn(meta ?? {}, m));
       reply.code(201);
