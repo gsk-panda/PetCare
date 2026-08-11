@@ -15,6 +15,7 @@ import { PetProfile } from './pages/PetProfile';
 import { CareRounds } from './pages/CareRounds';
 import { CareLogReport } from './pages/CareLogReport';
 import { Reports } from './pages/Reports';
+import { Outbox } from './pages/Outbox';
 import { OccupancyReport } from './pages/OccupancyReport';
 import { RevenueReport } from './pages/RevenueReport';
 import { VaccinationReport } from './pages/VaccinationReport';
@@ -91,6 +92,7 @@ function StaffApp({ tenant }: { tenant: TenantMeta }) {
         <Route path="/clients" element={<Clients />} />
         <Route path="/care" element={<CareRounds />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/email" element={<Outbox />} />
         <Route path="/reports/care-log" element={<CareLogReport />} />
         <Route path="/reports/occupancy" element={<OccupancyReport />} />
         <Route path="/reports/revenue" element={<RevenueReport />} />

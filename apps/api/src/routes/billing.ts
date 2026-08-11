@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { withTenant } from '../db.js';
 import { MANAGES_SETTINGS } from '../staff-auth.js';
+import { checkoutSummary, queueEmail, sendReleased } from '../outbox.js';
 import { stripeConfigured, verifyStripe } from '../stripe.js';
 
 /** Payment methods the desk can record without a card reader. */
@@ -24,6 +25,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       const { rows: fs } = await db.query(
         `SELECT currency, tax_rate_bps, terminal_provider, terminal_label,
                 terminal_location, terminal_status, timezone,
+                auto_send_booking_confirmation, auto_send_checkout_summary,
+                auto_send_vaccine_reminders,
                 to_char(pickup_cutoff, 'HH24:MI') AS pickup_cutoff,
                 to_char(pickup_cutoff, 'HH12:MI AM') AS pickup_cutoff_label
          FROM facility_settings WHERE singleton`,
@@ -37,6 +40,11 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
         currency: s.currency,
         taxRateBps: s.tax_rate_bps,
         timezone: s.timezone,
+        autoSend: {
+          bookingConfirmation: s.auto_send_booking_confirmation,
+          checkoutSummary: s.auto_send_checkout_summary,
+          vaccineReminders: s.auto_send_vaccine_reminders,
+        },
         pickupCutoff: s.pickup_cutoff,
         pickupCutoffLabel: s.pickup_cutoff_label,
         terminal: {
@@ -68,6 +76,9 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       terminalLocation?: string | null;
       pickupCutoff?: string;
       timezone?: string;
+      autoSendBookingConfirmation?: boolean;
+      autoSendCheckoutSummary?: boolean;
+      autoSendVaccineReminders?: boolean;
     };
   }>('/settings/billing', { preHandler: requireManager }, async (req, reply) => {
     const b = req.body ?? {};
@@ -89,6 +100,9 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
         `UPDATE facility_settings SET
            pickup_cutoff = COALESCE($6::time, pickup_cutoff),
            timezone = COALESCE($7, timezone),
+           auto_send_booking_confirmation = COALESCE($8, auto_send_booking_confirmation),
+           auto_send_checkout_summary     = COALESCE($9, auto_send_checkout_summary),
+           auto_send_vaccine_reminders    = COALESCE($10, auto_send_vaccine_reminders),
            tax_rate_bps = COALESCE($1, tax_rate_bps),
            terminal_provider = CASE WHEN $2::boolean THEN $3 ELSE terminal_provider END,
            terminal_label = COALESCE($4, terminal_label),
@@ -106,6 +120,9 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
           b.terminalLocation?.trim() ?? null,
           b.pickupCutoff ?? null,
           b.timezone?.trim() || null,
+          b.autoSendBookingConfirmation ?? null,
+          b.autoSendCheckoutSummary ?? null,
+          b.autoSendVaccineReminders ?? null,
         ],
       );
       return { ok: true };
@@ -330,7 +347,57 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
           ],
         );
 
+        // Inside the transaction: a receipt promising a check-out that then
+        // rolled back would be worse than no receipt at all.
+        const { rows: who } = await db.query(
+          `SELECT c.id AS client_id, c.first_name, c.email, p.name AS pet_name,
+                  b.service_type, b.start_date::text AS start_date, b.end_date::text AS end_date,
+                  t.name AS facility
+             FROM bookings b
+             JOIN clients c ON c.id = b.client_id
+             JOIN pets p ON p.id = b.pet_id
+             CROSS JOIN platform.tenants t
+            WHERE b.id = $1 AND t.schema_name = current_schema()`,
+          [req.params.bookingId],
+        );
+        const w = who[0];
+        if (w?.email) {
+          const mail = checkoutSummary({
+            facility: w.facility,
+            clientFirstName: w.first_name,
+            petName: w.pet_name,
+            serviceType: w.service_type,
+            startDate: w.start_date,
+            endDate: w.end_date,
+            lines: lines.map((l) => ({
+              description: l.description,
+              amountCents: l.amountCents,
+            })),
+            totalCents: total,
+            paidCents: paid,
+          });
+          await queueEmail(db, {
+            kind: 'checkout_summary',
+            clientId: w.client_id,
+            toEmail: w.email,
+            subject: mail.subject,
+            body: mail.body,
+            dedupeKey: `checkout:${invoiceId}`,
+            bookingId: req.params.bookingId,
+            invoiceId,
+          });
+        }
+
         await db.query('COMMIT');
+
+        // Delivery is attempted after the commit, so a mail failure cannot
+        // undo a completed check-out. Anything not sent stays in the outbox.
+        try {
+          await sendReleased(db, (msg, meta) => req.log.warn(meta ?? {}, msg));
+        } catch (err) {
+          req.log.error({ err }, 'checkout summary send failed');
+        }
+
         return {
           invoiceId,
           subtotalCents: subtotal,

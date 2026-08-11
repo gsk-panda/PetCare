@@ -1300,3 +1300,21 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
     font-size: 16px;
   }
 }
+
+/* =========================================================================
+   Email outbox
+   ========================================================================= */
+.bulkbar {
+  display: flex; align-items: center; gap: var(--s-2);
+  background: var(--brand-tint); border: 1px solid var(--brand);
+  border-radius: var(--r-md); padding: var(--s-2) var(--s-3);
+}
+.bulkbar b { font-size: var(--t-sm); color: var(--brand-deep); margin-right: auto; }
+
+/* The customer receives plain text, so the preview shows plain text. */
+.mailbody {
+  font-family: var(--mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  font-size: var(--t-xs); line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: var(--s-3); color: var(--ink);
+}

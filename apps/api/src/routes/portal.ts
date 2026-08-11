@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { facilityToday, withTenant } from '../db.js';
 import { createDaycareDays } from '../daycare-booking.js';
+import { queueBookingConfirmation } from '../booking-email.js';
 import { loginCodeMail, mailerConfigured, sendMail } from '../mailer.js';
 import {
   clearSessionCookie,
@@ -384,6 +385,15 @@ async function protectedRoutes(app: FastifyInstance): Promise<void> {
           today,
         });
         if ('error' in result) return reply.code(result.code).send({ error: result.error });
+        const firstCreated = result.created[0];
+        if (firstCreated) {
+          await queueBookingConfirmation(
+            db,
+            firstCreated.id,
+            (m, meta) => req.log.warn(meta ?? {}, m),
+            result.created.map((c) => c.date),
+          );
+        }
         reply.code(result.created.length ? 201 : 409);
         return result;
       });
@@ -414,6 +424,7 @@ async function protectedRoutes(app: FastifyInstance): Promise<void> {
          RETURNING id`,
         [petId, req.portal.clientId, serviceType, startDate, endDate, notes?.trim() || null],
       );
+      await queueBookingConfirmation(db, rows[0].id, (m, meta) => req.log.warn(meta ?? {}, m));
       reply.code(201);
       return { id: rows[0].id, status: 'requested' };
     });

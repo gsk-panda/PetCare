@@ -19,6 +19,7 @@ const links: NavItem[] = [
   { to: '/calendar/daycare', label: 'Daycare', icon: 'daycare' },
   { to: '/clients', label: 'Clients & pets', icon: 'clients' },
   { to: '/reports', label: 'Reports', icon: 'print' },
+  { to: '/email', label: 'Email', icon: 'clients' },
   // Reading settings is fine for anyone; the API refuses writes from
   // non-managers, and hiding the link keeps the nav honest about that.
   { to: '/settings', label: 'Settings', icon: 'settings', roles: ['owner', 'manager'] },

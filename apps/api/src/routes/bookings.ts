@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { facilityToday, withTenant } from '../db.js';
 import { createDaycareDays } from '../daycare-booking.js';
+import { queueBookingConfirmation } from '../booking-email.js';
 
 export async function bookingRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Querystring: { from?: string; to?: string } }>('/bookings', async (req) => {
@@ -205,6 +206,15 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
           today: await facilityToday(req.tenant.schemaName),
         });
         if ('error' in result) return reply.code(result.code).send({ error: result.error });
+        const firstCreated = result.created[0];
+        if (firstCreated) {
+          await queueBookingConfirmation(
+            db,
+            firstCreated.id,
+            (m, meta) => req.log.warn(meta ?? {}, m),
+            result.created.map((c) => c.date),
+          );
+        }
         reply.code(result.created.length ? 201 : 409);
         return result;
       });
@@ -272,6 +282,7 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
          VALUES ($1, $2, $3, 'confirmed', $4, $5, $6, $7) RETURNING id`,
         [petId, petRows[0].client_id, serviceType, startDate, endDate, runId ?? null, notes ?? null],
       );
+      await queueBookingConfirmation(db, rows[0].id, (m, meta) => req.log.warn(meta ?? {}, m));
       reply.code(201);
       return { id: rows[0].id };
     });

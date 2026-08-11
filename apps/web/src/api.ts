@@ -270,6 +270,12 @@ export interface BillingSettings {
   currency: string;
   taxRateBps: number;
   timezone: string;
+  /** Which kinds of customer email send themselves rather than waiting. */
+  autoSend: {
+    bookingConfirmation: boolean;
+    checkoutSummary: boolean;
+    vaccineReminders: boolean;
+  };
   /** 24-hour "HH:MM" for the input. */
   pickupCutoff: string;
   /** Human form, e.g. "11:00 AM". */
@@ -304,6 +310,9 @@ export const updateBillingSettings = (body: {
   terminalProvider?: string | null;
   terminalLabel?: string;
   terminalLocation?: string;
+  autoSendBookingConfirmation?: boolean;
+  autoSendCheckoutSummary?: boolean;
+  autoSendVaccineReminders?: boolean;
 }) => send<{ ok: boolean }>('/settings/billing', 'PATCH', body);
 
 export const verifyStripeTerminal = () =>
@@ -773,3 +782,57 @@ export const fetchRevenueReport = (from: string, to: string) =>
 
 export const fetchVaccinationReport = (withinDays: number) =>
   get<VaccinationReport>(`/api/${TENANT_SLUG}/reports/vaccinations?withinDays=${withinDays}`);
+
+/* ============================ email outbox ============================ */
+
+export type EmailKind = 'vaccine_expiry' | 'booking_confirmation' | 'checkout_summary';
+
+export interface OutboxMessage {
+  id: string;
+  kind: EmailKind;
+  status: 'queued' | 'sent' | 'failed' | 'canceled';
+  toEmail: string;
+  subject: string;
+  body: string;
+  clientName: string;
+  createdAt: string;
+  releasedAt: string | null;
+  releasedByName: string | null;
+  sentAt: string | null;
+  attempts: number;
+  lastError: string | null;
+  bookingId: string | null;
+  invoiceId: string | null;
+}
+
+export const fetchOutbox = (status = 'queued', kind?: string) =>
+  get<{ messages: OutboxMessage[]; counts: Record<string, number> }>(
+    `/api/${TENANT_SLUG}/outbox?status=${status}${kind ? `&kind=${kind}` : ''}`,
+  );
+
+export const releaseOutbox = (body: { ids?: string[]; all?: boolean; kind?: string }) =>
+  send<{ released: number; sent: number; failed: number; mailerReady: boolean }>(
+    '/outbox/release',
+    'POST',
+    body,
+  );
+
+export const cancelOutbox = (ids: string[]) =>
+  send<{ canceled: number }>('/outbox/cancel', 'POST', { ids });
+
+export const retryOutbox = (ids: string[]) =>
+  send<{ sent: number; failed: number; mailerReady: boolean }>('/outbox/retry', 'POST', { ids });
+
+export const runVaccineSweep = (withinDays = 30) =>
+  send<{
+    clientsConsidered: number;
+    queued: number;
+    alreadyQueued: number;
+    sent: number;
+    failed: number;
+    mailerReady: boolean;
+  }>(
+    '/outbox/vaccine-sweep',
+    'POST',
+    { withinDays },
+  );

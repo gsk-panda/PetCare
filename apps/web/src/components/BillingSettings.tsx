@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   createServiceItem,
   fetchBillingSettings,
@@ -257,6 +258,42 @@ export function BillingSettings({
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="card">
+        <div className="hd">
+          <b>Customer email</b>
+        </div>
+        <p className="setting-note">
+          Transactional mail is expected by the person who just did the thing, so it sends
+          itself. A reminder that reaches every customer at once is held in{' '}
+          <Link to="/email">Email</Link> until someone releases it.
+        </p>
+        {(
+          [
+            ['autoSendBookingConfirmation', 'bookingConfirmation', 'Booking confirmations',
+              'Sent when a stay is booked, at the desk or from the portal.'],
+            ['autoSendCheckoutSummary', 'checkoutSummary', 'Check-out receipts',
+              'Sent when a stay is closed, itemised, with anything still owed.'],
+            ['autoSendVaccineReminders', 'vaccineReminders', 'Vaccine reminders',
+              'Off by default: these go to many customers at once and are worth reading first.'],
+          ] as const
+        ).map(([field, key, label, why]) => (
+          <label key={key} className="check-row compact">
+            <input
+              type="checkbox"
+              checked={data.autoSend[key]}
+              disabled={!canEdit}
+              onChange={(e) =>
+                void run(key, () => updateBillingSettings({ [field]: e.target.checked }))
+              }
+            />
+            <span>
+              <b>Send {label.toLowerCase()} automatically</b>
+              <small>{why}</small>
+            </span>
+          </label>
+        ))}
       </div>
 
       <div className="card">
