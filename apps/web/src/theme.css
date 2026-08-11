@@ -948,10 +948,24 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
   display: grid; place-items: center; padding: var(--s-5); z-index: 100;
   animation: scrim-in var(--dur) var(--ease);
 }
+/*
+ * The modal is a column: header, one scrolling body, footer. The footer used
+ * to be `position: sticky; bottom: 0` inside a modal that scrolled as a whole,
+ * which does nothing at all — a sticky element only pins while there is
+ * content after it to scroll past, and the footer is the last child. So the
+ * long check-in checklist buried Cancel and Complete check-in below the fold
+ * and made you scroll the whole form to find them.
+ */
 .modal {
   background: var(--surface); border-radius: var(--r-lg); width: min(520px, 100%);
-  max-height: 90vh; overflow-y: auto; box-shadow: var(--lift);
+  max-height: 90vh; overflow: hidden; box-shadow: var(--lift);
+  display: flex; flex-direction: column;
   animation: modal-in var(--dur) var(--ease);
+}
+/* Some modals wrap body and footer in a form; it has to carry the column too,
+   or the scrolling region ends up inside a block that cannot shrink. */
+.modal > form {
+  display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto;
 }
 .modal.wide { width: min(680px, 100%); }
 @keyframes scrim-in { from { opacity: 0; } }
@@ -960,7 +974,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .modal-hd {
   display: flex; align-items: center; gap: var(--s-2);
   padding: var(--s-4); border-bottom: 1px solid var(--line);
-  position: sticky; top: 0; background: var(--surface); z-index: 1;
+  background: var(--surface); flex-shrink: 0;
 }
 .modal-hd b { font-size: var(--t-base); font-weight: 650; }
 .modal-x {
@@ -969,11 +983,16 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
   transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 .modal-x:hover { background: var(--ground); color: var(--ink); }
-.modal-body { padding: var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); }
+/* The only scrolling region. min-height:0 is load-bearing: without it a flex
+   item refuses to shrink below its content and the footer is pushed out. */
+.modal-body {
+  padding: var(--s-4); display: flex; flex-direction: column; gap: var(--s-3);
+  overflow-y: auto; flex: 1 1 auto; min-height: 0;
+}
 .modal-ft {
   display: flex; justify-content: flex-end; gap: var(--s-2); padding: var(--s-3) var(--s-4);
   border-top: 1px solid var(--line); background: var(--surface-2);
-  position: sticky; bottom: 0;
+  flex-shrink: 0;
 }
 
 /* =========================================================================

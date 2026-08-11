@@ -228,7 +228,8 @@ function BookingSheet({
           <button className="pt-link" onClick={onClose}>Close</button>
         </div>
 
-        <form className="pt-sheet-body" onSubmit={submit}>
+        <form className="pt-sheet-form" onSubmit={submit}>
+          <div className="pt-sheet-body">
           {!existing && (
             <>
               <label className="pt-field">
@@ -324,19 +325,25 @@ function BookingSheet({
 
           {error && <div className="pt-error inline">{error}</div>}
 
-          <p className="pt-fine">
-            We'll review and confirm. {existing ? 'Changing the dates puts it back into review.' : ''}
-          </p>
+            <p className="pt-fine">
+              We'll review and confirm.{' '}
+              {existing ? 'Changing the dates puts it back into review.' : ''}
+            </p>
+          </div>
 
-          <button className="pt-btn" type="submit" disabled={busy || !petId}>
-            {busy
-              ? 'Sending…'
-              : existing
-                ? 'Save changes'
-                : serviceType === 'daycare' && days.length > 1
-                  ? `Request ${days.length} days`
-                  : 'Request stay'}
-          </button>
+          {/* Outside the scrolling body: with a month grid in the form, the
+              button sat 108px below the fold on a phone. */}
+          <div className="pt-sheet-ft">
+            <button className="pt-btn" type="submit" disabled={busy || !petId}>
+              {busy
+                ? 'Sending…'
+                : existing
+                  ? 'Save changes'
+                  : serviceType === 'daycare' && days.length > 1
+                    ? `Request ${days.length} days`
+                    : 'Request stay'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
